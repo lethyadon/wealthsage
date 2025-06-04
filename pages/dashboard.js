@@ -1,4 +1,4 @@
-// pages/dashboard.js
+<h1>Welcome to WealthSage 🎯</h1>// pages/dashboard.js
 import NavBar from "../components/NavBar";
 
 export default function Dashboard() {
