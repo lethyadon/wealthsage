@@ -11,8 +11,7 @@ export default function Home() {
 // pages/index.js
 import NavBar from "../components/NavBar";
 
-export default function Home() {
-  return (
+
     <>
       <NavBar />
       <main style={{ padding: "2rem" }}>
