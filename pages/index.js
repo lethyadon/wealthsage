@@ -8,3 +8,17 @@ export default function Home() {
     </main>
   );
 }
+// pages/index.js
+import NavBar from "../components/NavBar";
+
+export default function Home() {
+  return (
+    <>
+      <NavBar />
+      <main style={{ padding: "2rem" }}>
+        <h1>Welcome to WealthSage</h1>
+        <p>Your financial assistant, all in one place.</p>
+      </main>
+    </>
+  );
+}
