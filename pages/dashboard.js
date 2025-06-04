@@ -7,3 +7,17 @@ export default function Dashboard() {
     </main>
   );
 }
+// pages/dashboard.js
+import NavBar from "../components/NavBar";
+
+export default function Dashboard() {
+  return (
+    <>
+      <NavBar />
+      <main style={{ padding: "2rem" }}>
+        <h1>Dashboard</h1>
+        <p>Here you'll track goals, find jobs, and more.</p>
+      </main>
+    </>
+  );
+}
