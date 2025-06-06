@@ -6,7 +6,7 @@ export default function Settings() {
     <>
       <NavBar />
       <main className="max-w-xl mx-auto p-6 font-sans">
-        <h1 className="text-2xl font-bold mb-4 text-blue-700">Settings</h1>
+        <h1 className="text-2xl font-bold mb-4 text-green-800">Settings</h1>
         <form className="space-y-4">
           <div>
             <label className="block text-sm font-medium">Name</label>
@@ -24,7 +24,7 @@ export default function Settings() {
               <option>Push Only</option>
             </select>
           </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save Changes</button>
+          <button className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Save Changes</button>
         </form>
       </main>
     </>
@@ -53,10 +53,10 @@ export default function AdminPanel() {
     <>
       <NavBar />
       <main className="max-w-4xl mx-auto p-6 font-sans">
-        <h1 className="text-2xl font-bold mb-6">Admin Panel</h1>
+        <h1 className="text-2xl font-bold mb-6 text-green-800">Admin Panel</h1>
         <table className="w-full text-left border">
           <thead>
-            <tr className="bg-gray-200">
+            <tr className="bg-green-100">
               <th className="p-2">User ID</th>
               <th className="p-2">Email</th>
               <th className="p-2">Plan</th>
