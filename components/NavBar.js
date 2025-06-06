@@ -17,3 +17,4 @@ export default function NavBar() {
     </nav>
   );
 }
+<Image src="/logo.png" alt="Wealth Sage Logo" width={120} height={120} />
