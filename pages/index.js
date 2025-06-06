@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <>
       <NavBar />
-      <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "900px", margin: "auto" }}>
+      <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "800px", margin: "auto" }}>
         <h1 style={{ fontSize: "2.5rem", marginBottom: "1rem", color: "#1a202c" }}>Welcome to WealthSage</h1>
         <p style={{ fontSize: "1.2rem", color: "#4a5568" }}>
           Your personal finance assistant. Track your goals, manage debt, get reminders, and explore new jobs – all in one place.
@@ -17,10 +17,10 @@ export default function Home() {
           <ul style={{ lineHeight: "2", fontSize: "1rem", color: "#4a5568" }}>
             <li>✅ Track your financial goals and savings</li>
             <li>📉 Monitor and reduce your debts</li>
-            <li>⏰ Set up daily or weekly reminders</li>
+            <li>📆 Set up daily or weekly reminders</li>
             <li>💼 Discover job listings that fit your skills</li>
-            <li>🤖 Ask AI for budgeting, saving, and investment advice</li>
-            <li>✨ Upgrade to Premium for unlimited AI chat & advanced tracking</li>
+            <li>🧠 Ask AI for budgeting, saving, and investment advice</li>
+            <li>🚀 Upgrade to Premium for unlimited AI chat & advanced tracking</li>
           </ul>
         </section>
 
