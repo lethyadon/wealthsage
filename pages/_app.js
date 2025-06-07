@@ -8,7 +8,8 @@ function MyApp({ Component, pageProps }) {
       <Head>
         <title>Wealth Sage</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="Your financial assistant, all in one place." />
+        <meta name="description" content="Your AI financial assistant." />
+        <link rel="icon" href="/favicon.ico" />
       </Head>
       <Component {...pageProps} />
     </>
