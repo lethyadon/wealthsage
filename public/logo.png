@@ -1,1 +1,1 @@
-<Image src="/logo.png" alt="WealthSage Logo" width={150} height={50} />
+<img src="/logo.png" alt="WealthSage Logo" width="150" />
