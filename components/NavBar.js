@@ -1,20 +1,21 @@
 import Link from "next/link";
-import Image from "next/image"; // Add this line
+import Image from "next/image";
 
 export default function NavBar() {
   return (
-    <nav className="bg-gray-900 text-white px-6 py-3 flex justify-between items-center font-sans">
-      <Link href="/" className="flex items-center gap-2">
-        <Image src="/logo.png" alt="Wealth Sage Logo" width={36} height={36} />
-        <span className="font-bold text-xl">WealthSage</span>
+    <nav className="bg-green-800 p-4 text-white flex items-center justify-between shadow-md">
+      <Link href="/">
+        <div className="flex items-center gap-2 cursor-pointer">
+          <Image src="/logo.png" alt="WealthSage Logo" width={40} height={40} />
+          <span className="text-xl font-bold">WealthSage</span>
+        </div>
       </Link>
       <div className="space-x-4">
         <Link href="/dashboard">Dashboard</Link>
-        <Link href="/ai">AI</Link>
         <Link href="/jobs">Jobs</Link>
-        <Link href="/upgrade">Upgrade</Link>
+        <Link href="/ai">AI Assistant</Link>
+        <Link href="/settings">Settings</Link>
       </div>
     </nav>
   );
 }
-<Image src="/logo.png" alt="Wealth Sage Logo" width={120} height={120} />
