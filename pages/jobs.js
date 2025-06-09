@@ -104,6 +104,7 @@ export default function JobsPage() {
               <p className="text-sm mt-2">Salary: £{job.salary?.toLocaleString()}</p>
               <p className="text-sm">Company Rating: {job.companyRating ?? "N/A"}</p>
               <p className="text-sm">Match Score: {job.cvMatch ?? "N/A"}</p>
+              <p className="text-sm italic text-gray-500">Review: {job.companyReview ?? "No reviews available."}</p>
               <p className="mt-2">{job.description}</p>
               <div className="flex gap-3 mt-3 flex-wrap">
                 <button onClick={() => applyToJob(job)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Apply Now</button>
