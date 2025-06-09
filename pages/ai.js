@@ -74,11 +74,31 @@ Sincerely,
 
 Premium helps track this in real time.`;
         updatedMemory.goal = "savings";
+      } else if (userInput.includes("upload")) {
+        if (userInput.includes("bank")) {
+          updatedMemory.bankUploaded = true;
+          aiResponse = `Thanks! I'll scan your statement to summarize:
+- Recurring expenses to cancel
+- Total interest paid monthly
+- Potential savings areas
+
+Premium members get automated categorization.`;
+        } else if (userInput.includes("cv")) {
+          updatedMemory.cvUploaded = true;
+          aiResponse = `CV received. I’ll now match your skills with open jobs and prioritize high-score roles. Filter options are [here](/jobs).`;
+        }
       } else {
-        if (memory.goal === "debt") {
+        if (memory.goal === "debt" && memory.bankUploaded) {
+          aiResponse = `Now that I have your bank data, let’s break it down:
+- Top 3 recurring payments
+- Total discretionary spend
+- Suggested areas to cut
+
+Type 'cancel Netflix' or 'reduce groceries' for help.`;
+        } else if (memory.goal === "debt") {
           aiResponse = `Let’s reduce more debt. Want to cancel unused services like streaming subscriptions? I can help draft letters.`;
         } else if (memory.goal === "job" && memory.cvUploaded) {
-          aiResponse = `I’ll now match your CV with top job listings. You can filter by salary, region, and rating [here](/jobs).`; 
+          aiResponse = `I’ll now match your CV with top job listings. You can filter by salary, region, and rating [here](/jobs).`;
         } else {
           aiResponse = `Thanks for sharing. You can:
 - Upload your bank statement
