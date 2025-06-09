@@ -27,11 +27,11 @@ export default function JobsPage() {
   const filteredJobs = jobs
     .filter(job => {
       const locationMatch = locationFilter ? job.location?.toLowerCase().includes(locationFilter.toLowerCase()) : true;
-      const salaryMatch = job.salary >= minSalary;
+      const salaryMatch = (job.salary ?? 0) >= minSalary;
       return locationMatch && salaryMatch;
     })
     .sort((a, b) => {
-      if (sortOption === "salary") return b.salary - a.salary;
+      if (sortOption === "salary") return (b.salary ?? 0) - (a.salary ?? 0);
       if (sortOption === "rating") return (b.companyRating || 0) - (a.companyRating || 0);
       return 0;
     });
@@ -65,7 +65,7 @@ export default function JobsPage() {
       <main className="max-w-4xl mx-auto p-6 font-sans">
         <h1 className="text-2xl font-bold mb-6 text-green-800">💼 Job Listings</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <input
             className="p-2 border rounded"
             type="text"
@@ -73,13 +73,18 @@ export default function JobsPage() {
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
           />
-          <input
+          <select
             className="p-2 border rounded"
-            type="number"
-            placeholder="Minimum salary (£)"
             value={minSalary}
-            onChange={(e) => setMinSalary(parseInt(e.target.value))}
-          />
+            onChange={(e) => setMinSalary(Number(e.target.value))}
+          >
+            <option value={0}>Minimum salary</option>
+            <option value={20000}>£20,000+</option>
+            <option value={25000}>£25,000+</option>
+            <option value={30000}>£30,000+</option>
+            <option value={35000}>£35,000+</option>
+            <option value={50000}>£50,000+</option>
+          </select>
           <select
             className="p-2 border rounded"
             value={sortOption}
