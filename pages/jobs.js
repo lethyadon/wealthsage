@@ -2,6 +2,7 @@
 import NavBar from "../components/NavBar";
 import { useEffect, useState } from "react";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { motion, AnimatePresence } from "framer-motion";
 import app from "../firebase";
 
 export default function JobsPage() {
@@ -14,7 +15,6 @@ export default function JobsPage() {
   const [savedJobs, setSavedJobs] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [autoApply, setAutoApply] = useState(false);
-  const [filterTriggered, setFilterTriggered] = useState(false);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -24,11 +24,6 @@ export default function JobsPage() {
     };
     fetchJobs();
   }, []);
-
-  const applyFilters = () => {
-    setFilterTriggered(true);
-    setCurrentPage(1);
-  };
 
   const filteredJobs = jobs
     .filter(job => {
@@ -44,8 +39,8 @@ export default function JobsPage() {
 
   const indexOfLastJob = currentPage * jobsPerPage;
   const indexOfFirstJob = indexOfLastJob - jobsPerPage;
-  const currentJobs = filterTriggered ? filteredJobs.slice(indexOfFirstJob, indexOfLastJob) : jobs.slice(indexOfFirstJob, indexOfLastJob);
-  const totalPages = Math.ceil((filterTriggered ? filteredJobs.length : jobs.length) / jobsPerPage);
+  const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
+  const totalPages = Math.ceil(filteredJobs.length / jobsPerPage);
 
   const saveJob = (job) => {
     if (!savedJobs.includes(job)) setSavedJobs([...savedJobs, job]);
@@ -77,12 +72,18 @@ export default function JobsPage() {
             type="text"
             placeholder="Filter by location..."
             value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
+            onChange={(e) => {
+              setLocationFilter(e.target.value);
+              setCurrentPage(1);
+            }}
           />
           <select
             className="p-2 border rounded"
             value={minSalary}
-            onChange={(e) => setMinSalary(Number(e.target.value))}
+            onChange={(e) => {
+              setMinSalary(Number(e.target.value));
+              setCurrentPage(1);
+            }}
           >
             <option value={0}>Minimum salary</option>
             <option value={20000}>£20,000+</option>
@@ -94,37 +95,43 @@ export default function JobsPage() {
           <select
             className="p-2 border rounded"
             value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}
+            onChange={(e) => {
+              setSortOption(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="none">Sort by...</option>
             <option value="salary">Salary</option>
             <option value="rating">Company Rating</option>
           </select>
-          <button
-            onClick={applyFilters}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Apply Filters
-          </button>
         </div>
 
         <ul className="space-y-4">
-          {currentJobs.map((job, i) => (
-            <li key={i} className="border p-4 rounded shadow bg-white">
-              <h2 className="text-xl font-semibold text-blue-700">{job.title}</h2>
-              <p className="text-sm text-gray-600">{job.company} - {job.location}</p>
-              <p className="text-sm mt-2">Salary: £{job.salary?.toLocaleString()}</p>
-              <p className="text-sm">Company Rating: {job.companyRating ?? "N/A"}</p>
-              <p className="text-sm">Match Score: {job.cvMatch ?? "N/A"}</p>
-              <p className="text-sm italic text-gray-500">Review: {job.companyReview ?? "No reviews available."}</p>
-              <p className="mt-2">{job.description}</p>
-              <div className="flex gap-3 mt-3 flex-wrap">
-                <button onClick={() => applyToJob(job)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Apply Now</button>
-                <button onClick={() => saveJob(job)} className="px-4 py-2 bg-gray-200 text-black rounded hover:bg-gray-300">Save Job</button>
-                <button onClick={() => toggleAlert(job)} className="px-4 py-2 bg-yellow-200 text-black rounded hover:bg-yellow-300">Set Alert</button>
-              </div>
-            </li>
-          ))}
+          <AnimatePresence>
+            {currentJobs.map((job, i) => (
+              <motion.li
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="border p-4 rounded shadow bg-white"
+              >
+                <h2 className="text-xl font-semibold text-blue-700">{job.title}</h2>
+                <p className="text-sm text-gray-600">{job.company} - {job.location}</p>
+                <p className="text-sm mt-2">Salary: £{job.salary?.toLocaleString()}</p>
+                <p className="text-sm">Company Rating: {job.companyRating ?? "N/A"}</p>
+                <p className="text-sm">Match Score: {job.cvMatch ?? "N/A"}</p>
+                <p className="text-sm italic text-gray-500">Review: {job.companyReview ?? "No reviews available."}</p>
+                <p className="mt-2">{job.description}</p>
+                <div className="flex gap-3 mt-3 flex-wrap">
+                  <button onClick={() => applyToJob(job)} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Apply Now</button>
+                  <button onClick={() => saveJob(job)} className="px-4 py-2 bg-gray-200 text-black rounded hover:bg-gray-300">Save Job</button>
+                  <button onClick={() => toggleAlert(job)} className="px-4 py-2 bg-yellow-200 text-black rounded hover:bg-yellow-300">Set Alert</button>
+                </div>
+              </motion.li>
+            ))}
+          </AnimatePresence>
         </ul>
 
         {currentJobs.length === 0 && <p className="mt-4 text-gray-500">No jobs match your filters.</p>}
