@@ -14,6 +14,7 @@ export default function JobsPage() {
   const [savedJobs, setSavedJobs] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [autoApply, setAutoApply] = useState(false);
+  const [filterTriggered, setFilterTriggered] = useState(false);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -23,6 +24,11 @@ export default function JobsPage() {
     };
     fetchJobs();
   }, []);
+
+  const applyFilters = () => {
+    setFilterTriggered(true);
+    setCurrentPage(1);
+  };
 
   const filteredJobs = jobs
     .filter(job => {
@@ -38,8 +44,8 @@ export default function JobsPage() {
 
   const indexOfLastJob = currentPage * jobsPerPage;
   const indexOfFirstJob = indexOfLastJob - jobsPerPage;
-  const currentJobs = filteredJobs.slice(indexOfFirstJob, indexOfLastJob);
-  const totalPages = Math.ceil(filteredJobs.length / jobsPerPage);
+  const currentJobs = filterTriggered ? filteredJobs.slice(indexOfFirstJob, indexOfLastJob) : jobs.slice(indexOfFirstJob, indexOfLastJob);
+  const totalPages = Math.ceil((filterTriggered ? filteredJobs.length : jobs.length) / jobsPerPage);
 
   const saveJob = (job) => {
     if (!savedJobs.includes(job)) setSavedJobs([...savedJobs, job]);
@@ -65,7 +71,7 @@ export default function JobsPage() {
       <main className="max-w-4xl mx-auto p-6 font-sans">
         <h1 className="text-2xl font-bold mb-6 text-green-800">💼 Job Listings</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <input
             className="p-2 border rounded"
             type="text"
@@ -94,6 +100,12 @@ export default function JobsPage() {
             <option value="salary">Salary</option>
             <option value="rating">Company Rating</option>
           </select>
+          <button
+            onClick={applyFilters}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Apply Filters
+          </button>
         </div>
 
         <ul className="space-y-4">
@@ -115,7 +127,7 @@ export default function JobsPage() {
           ))}
         </ul>
 
-        {filteredJobs.length === 0 && <p className="mt-4 text-gray-500">No jobs match your filters.</p>}
+        {currentJobs.length === 0 && <p className="mt-4 text-gray-500">No jobs match your filters.</p>}
 
         {totalPages > 1 && (
           <div className="flex justify-center mt-6 space-x-2">
