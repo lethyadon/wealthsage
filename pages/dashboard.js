@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [sagePoints, setSagePoints] = useState(0);
   const [showStore, setShowStore] = useState(false);
   const [claimedRewards, setClaimedRewards] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
 
   const addDebt = () => {
     setDebts([...debts, { name: "", amount: "" }]);
@@ -150,45 +151,52 @@ export default function Dashboard() {
   };
 
   return (
-    <>
+    <div className={darkMode ? "dark bg-gray-900 text-white min-h-screen" : "bg-gray-50 text-black min-h-screen transition-all duration-300 ease-in-out"}>
       <NavBar />
-      <main className="max-w-4xl mx-auto p-6 font-sans">
-        <div className="text-center py-8 bg-gradient-to-r from-green-100 to-green-50 shadow rounded mb-8">
-          <h1 className="text-3xl font-extrabold text-green-900">Welcome to WealthSage</h1>
-          <p className="mt-2 text-gray-600">Smarter money habits start here – track, save, and grow.</p>
-        </div>
-
+      <main className="max-w-5xl mx-auto p-6 font-sans">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-green-800">📊 Your Financial Overview</h2>
-          <div className="text-lg text-green-700">🌟 Sage Points: {sagePoints}</div>
+          <h1 className="text-3xl font-bold text-green-700">WealthSage Dashboard</h1>
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className="px-4 py-2 border rounded text-sm text-white bg-gray-700 hover:bg-gray-600"
+          >
+            {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <div className="border p-4 rounded bg-white shadow">
-            <h3 className="text-xl font-bold mb-2 text-green-700">Where to Grow Your Money</h3>
-            <ul className="list-disc pl-6 text-sm text-gray-700 space-y-1">
-              <li>High-Interest Savings Accounts – low risk, flexible access</li>
-              <li>Cash ISAs (UK) – tax-free savings growth</li>
-              <li>Stocks & Shares ISAs – invest in ETFs or index funds</li>
-              <li>Employer Pensions – matched contributions</li>
-              <li>Robo-Advisors (e.g. Nutmeg, Moneybox)</li>
-              <li>Premium Bonds – safe NS&I lottery-style returns</li>
-            </ul>
-            <p className="text-xs text-gray-400 mt-2">Always do your own research or consult a financial advisor.</p>
-          </div>
+        <div className="mb-6 text-center bg-gradient-to-br from-green-200 via-white to-green-100 p-6 rounded shadow animate-fade-in">
+          <h2 className="text-xl font-semibold">Track your savings, analyze your spending, and earn rewards!</h2>
+          <p className="text-sm text-gray-700">Your personalized journey to financial clarity starts here.</p>
+        </div>
 
-          <div className="border p-4 rounded bg-white shadow">
-            <h3 className="text-xl font-bold mb-2 text-green-700">💡 Investment Tips</h3>
-            <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
-              <li>Automate your savings on payday</li>
-              <li>Track spending monthly and trim low-value subs</li>
-              <li>Consider diversified funds over individual stocks</li>
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 p-4 shadow rounded">
+            <h3 className="font-semibold text-lg mb-2 text-green-800">Where to Grow Your Money</h3>
+            <ul className="list-disc list-inside text-sm">
+              <li>High-Interest Savings Accounts</li>
+              <li>Cash ISAs (UK)</li>
+              <li>Stocks & Shares ISAs</li>
+              <li>Employer Pension Contributions</li>
+              <li>Robo-Advisors</li>
+              <li>Premium Bonds</li>
+            </ul>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-4 shadow rounded">
+            <h3 className="font-semibold text-lg mb-2 text-green-800">💡 Investment Tips</h3>
+            <ul className="list-disc list-inside text-sm">
+              <li>Automate savings on payday</li>
+              <li>Review subscriptions monthly</li>
+              <li>Prioritize diversified funds</li>
             </ul>
           </div>
         </div>
 
-        {/* Continue rendering existing dashboard features... */}
+        <div className="text-right mb-4">
+          <span className="text-green-700 font-medium">🌟 Sage Points: {sagePoints}</span>
+        </div>
+
+        {/* Further dashboard widgets and financial tools here */}
       </main>
-    </>
+    </div>
   );
 }
