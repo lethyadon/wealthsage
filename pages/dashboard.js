@@ -1,18 +1,30 @@
 // pages/dashboard.js
 import NavBar from "../components/NavBar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Papa from "papaparse";
-import { Pie } from "react-chartjs-2";
+import { Pie, Line, Doughnut } from "react-chartjs-2";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
   Chart as ChartJS,
   ArcElement,
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
   Tooltip,
   Legend
 } from "chart.js";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(
+  ArcElement,
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Tooltip,
+  Legend
+);
 
 export default function Dashboard() {
   const [debts, setDebts] = useState([{ name: "", amount: "" }]);
@@ -36,6 +48,23 @@ export default function Dashboard() {
   const [showStore, setShowStore] = useState(false);
   const [claimedRewards, setClaimedRewards] = useState([]);
   const [darkMode, setDarkMode] = useState(false);
+
+  const rewards = [
+    { name: "£5 Coffee Card", cost: 25, icon: "☕" },
+    { name: "One-on-One Budget Review", cost: 50, icon: "📊" },
+    { name: "Amazon Voucher £10", cost: 100, icon: "🛍️" }
+  ];
+
+  const claimReward = (reward) => {
+    if (sagePoints >= reward.cost) {
+      setClaimedRewards([...claimedRewards, reward.name]);
+      setSagePoints(sagePoints - reward.cost);
+      setRewardMessage(`🎉 You’ve redeemed: ${reward.name}`);
+      setTimeout(() => setRewardMessage(""), 4000);
+    } else {
+      alert("Not enough Sage Points.");
+    }
+  };
 
   const addDebt = () => {
     setDebts([...debts, { name: "", amount: "" }]);
@@ -130,9 +159,18 @@ export default function Dashboard() {
     ]
   };
 
-  const suggestedBudgets = Object.fromEntries(
-    Object.entries(categorized).map(([cat, amt]) => [cat, `£${(amt * 0.9).toFixed(2)}`])
-  );
+  const savingsOverTime = {
+    labels: savings.map((s, i) => `Entry ${i + 1}`),
+    datasets: [
+      {
+        label: "Savings Added",
+        data: savings.map((_, i) => (i + 1) * 50),
+        fill: false,
+        borderColor: "#4CAF50",
+        tension: 0.1
+      }
+    ]
+  };
 
   const updateChallengeProgress = () => {
     const totalSteps = 3;
@@ -166,36 +204,44 @@ export default function Dashboard() {
 
         <div className="mb-6 text-center bg-gradient-to-br from-green-200 via-white to-green-100 p-6 rounded shadow animate-fade-in">
           <h2 className="text-xl font-semibold">Track your savings, analyze your spending, and earn rewards!</h2>
-          <p className="text-sm text-gray-700">Your personalized journey to financial clarity starts here.</p>
+          <p className="text-sm text-gray-700 italic">“A goal without a plan is just a wish.” – Antoine de Saint-Exupéry</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white dark:bg-gray-800 p-4 shadow rounded">
-            <h3 className="font-semibold text-lg mb-2 text-green-800">Where to Grow Your Money</h3>
-            <ul className="list-disc list-inside text-sm">
-              <li>High-Interest Savings Accounts</li>
-              <li>Cash ISAs (UK)</li>
-              <li>Stocks & Shares ISAs</li>
-              <li>Employer Pension Contributions</li>
-              <li>Robo-Advisors</li>
-              <li>Premium Bonds</li>
+        {rewardMessage && (
+          <div className="mb-4 p-4 text-center text-green-800 bg-green-100 rounded shadow animate-pulse">
+            {rewardMessage}
+          </div>
+        )}
+
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-2">🎁 Sage Store</h2>
+          <div className="flex gap-4 overflow-x-auto">
+            {rewards.map((reward, idx) => (
+              <div key={idx} className="p-4 min-w-[200px] bg-white border rounded shadow">
+                <div className="text-3xl mb-2">{reward.icon}</div>
+                <h3 className="font-bold text-lg">{reward.name}</h3>
+                <p className="text-sm">Cost: {reward.cost} Sage Points</p>
+                <button
+                  className="mt-2 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                  onClick={() => claimReward(reward)}
+                >
+                  Redeem
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {claimedRewards.length > 0 && (
+          <div className="mt-6">
+            <h3 className="font-semibold">🎉 Claimed Rewards</h3>
+            <ul className="list-disc ml-5">
+              {claimedRewards.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
             </ul>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-4 shadow rounded">
-            <h3 className="font-semibold text-lg mb-2 text-green-800">💡 Investment Tips</h3>
-            <ul className="list-disc list-inside text-sm">
-              <li>Automate savings on payday</li>
-              <li>Review subscriptions monthly</li>
-              <li>Prioritize diversified funds</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="text-right mb-4">
-          <span className="text-green-700 font-medium">🌟 Sage Points: {sagePoints}</span>
-        </div>
-
-        {/* Further dashboard widgets and financial tools here */}
+        )}
       </main>
     </div>
   );
