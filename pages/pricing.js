@@ -34,38 +34,10 @@ export default function PricingPage() {
               <li>🧠 CV/job matching with filtered search & AI scores</li>
               <li>🏆 Priority access to new features and Sage Points store</li>
             </ul>
-            <button className="mt-6 w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Upgrade to Premium</button>
+            <a href="/upgrade">
+              <button className="mt-6 w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Upgrade to Premium</button>
+            </a>
           </div>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-// pages/upgrade.js
-import NavBar from "../components/NavBar";
-import { Trophy } from "lucide-react";
-
-export default function UpgradePage() {
-  return (
-    <div className="bg-gray-50 min-h-screen font-sans">
-      <NavBar />
-      <main className="max-w-4xl mx-auto p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Trophy className="text-green-600" />
-          <h1 className="text-3xl font-bold text-green-700">Upgrade to Premium</h1>
-        </div>
-        <div className="bg-white p-6 border rounded-lg shadow-lg hover:shadow-xl transition">
-          <p className="mb-4 text-gray-700 text-base">Unlock the full WealthSage experience with powerful tools to manage your finances and reach your goals faster.</p>
-          <ul className="text-sm space-y-2 text-gray-800 mb-6">
-            <li>📊 Advanced budget breakdowns and saving suggestions</li>
-            <li>📈 Visual debt payoff tracker with progress rings</li>
-            <li>🏁 Tailored saving missions with motivational streaks</li>
-            <li>📬 Cancel subscriptions with AI-generated letters</li>
-            <li>🔍 Smart job matching and CV-enhanced applications</li>
-            <li>🎁 Access to exclusive rewards and Sage Store perks</li>
-          </ul>
-          <button className="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-center">Upgrade Now</button>
         </div>
       </main>
     </div>
