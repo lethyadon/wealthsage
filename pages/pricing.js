@@ -3,6 +3,8 @@ import NavBar from "../components/NavBar";
 import { Sparkles } from "lucide-react";
 
 export default function PricingPage() {
+  const isPremium = true; // For testing as premium user
+
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
       <NavBar />
@@ -27,16 +29,20 @@ export default function PricingPage() {
             <div className="absolute top-2 right-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Most Popular</div>
             <h2 className="text-xl font-semibold mb-3 text-green-700">Premium Plan</h2>
             <ul className="text-sm space-y-2 text-gray-700">
-              <li>🌱 Full financial dashboard with goal tracking</li>
-              <li>💡 Visual debt bubbles and category insights</li>
-              <li>🤖 AI-generated savings plans and alerts</li>
-              <li>📩 Subscription cancellation letter generator</li>
-              <li>🧠 CV/job matching with filtered search & AI scores</li>
-              <li>🏆 Priority access to new features and Sage Points store</li>
+              <li>📊 Advanced budget breakdowns and saving suggestions</li>
+              <li>📈 Visual debt payoff tracker with progress rings</li>
+              <li>🏁 Tailored saving missions with motivational streaks</li>
+              <li>📬 Cancel subscriptions with AI-generated letters</li>
+              <li>🔍 Smart job matching and CV-enhanced applications</li>
+              <li>🎁 Access to exclusive rewards and Sage Store perks</li>
             </ul>
-            <a href="/upgrade">
-              <button className="mt-6 w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Upgrade to Premium</button>
-            </a>
+            {isPremium ? (
+              <button className="mt-6 w-full py-2 bg-gray-300 text-gray-600 rounded-lg cursor-not-allowed">Already Upgraded</button>
+            ) : (
+              <a href="/upgrade">
+                <button className="mt-6 w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Upgrade to Premium</button>
+              </a>
+            )}
           </div>
         </div>
       </main>
