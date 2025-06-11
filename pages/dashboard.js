@@ -1,247 +1,189 @@
 // pages/dashboard.js
 import NavBar from "../components/NavBar";
-import { useState, useEffect } from "react";
-import Papa from "papaparse";
-import { Pie, Line, Doughnut } from "react-chartjs-2";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import {
-  Chart as ChartJS,
-  ArcElement,
-  LineElement,
-  PointElement,
-  LinearScale,
-  CategoryScale,
-  Tooltip,
-  Legend
-} from "chart.js";
-
-ChartJS.register(
-  ArcElement,
-  LineElement,
-  PointElement,
-  LinearScale,
-  CategoryScale,
-  Tooltip,
-  Legend
-);
+import { useEffect, useState } from "react";
+import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
+import app from "../firebase";
+import { Doughnut, Line } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from "chart.js";
+ChartJS.register(ArcElement, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale);
 
 export default function Dashboard() {
-  const [debts, setDebts] = useState([{ name: "", amount: "" }]);
-  const [income, setIncome] = useState(0);
-  const [targetMonths, setTargetMonths] = useState(12);
-  const [savings, setSavings] = useState([]);
-  const [tasks, setTasks] = useState([
-    "Upload bank statement",
-    "Review subscriptions",
-    "Set monthly savings goal"
-  ]);
-  const [fileName, setFileName] = useState("");
-  const [parsedData, setParsedData] = useState([]);
-  const [categorized, setCategorized] = useState({});
-  const [aiTips, setAiTips] = useState([]);
-  const [challengeProgress, setChallengeProgress] = useState(0);
-  const [challengeComplete, setChallengeComplete] = useState(false);
-  const [streak, setStreak] = useState(0);
-  const [rewardMessage, setRewardMessage] = useState("");
-  const [sagePoints, setSagePoints] = useState(0);
-  const [showStore, setShowStore] = useState(false);
-  const [claimedRewards, setClaimedRewards] = useState([]);
-  const [darkMode, setDarkMode] = useState(false);
+  const [categories, setCategories] = useState({});
+  const [total, setTotal] = useState(0);
+  const [history, setHistory] = useState([]);
+  const [monthlyGoal, setMonthlyGoal] = useState(500);
+  const [savedAmount, setSavedAmount] = useState(300);
+  const [cvScore, setCvScore] = useState(85);
+  const [aiTip, setAiTip] = useState("Consider optimizing your CV keywords for higher job matches.");
 
-  const rewards = [
-    { name: "£5 Coffee Card", cost: 25, icon: "☕" },
-    { name: "One-on-One Budget Review", cost: 50, icon: "📊" },
-    { name: "Amazon Voucher £10", cost: 100, icon: "🛍️" }
-  ];
-
-  const claimReward = (reward) => {
-    if (sagePoints >= reward.cost) {
-      setClaimedRewards([...claimedRewards, reward.name]);
-      setSagePoints(sagePoints - reward.cost);
-      setRewardMessage(`🎉 You’ve redeemed: ${reward.name}`);
-      setTimeout(() => setRewardMessage(""), 4000);
-    } else {
-      alert("Not enough Sage Points.");
-    }
-  };
-
-  const addDebt = () => {
-    setDebts([...debts, { name: "", amount: "" }]);
-  };
-
-  const updateDebt = (index, field, value) => {
-    const newDebts = [...debts];
-    newDebts[index][field] = value;
-    setDebts(newDebts);
-  };
-
-  const addSavings = (note) => {
-    setSavings([...savings, note]);
-    updateChallengeProgress();
-  };
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file && file.type === "text/csv") {
-      setFileName(file.name);
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          setParsedData(results.data);
-          categorizeSpending(results.data);
-          updateChallengeProgress();
-        }
-      });
-    } else {
-      alert("Please upload a valid CSV file.");
-    }
-  };
-
-  const categorizeSpending = (transactions) => {
-    const categories = {};
-    const tips = [];
-    transactions.forEach(({ Description = "Other", Amount = 0 }) => {
-      let category = "Other";
-      const desc = Description.toLowerCase();
-      const value = Math.abs(parseFloat(Amount));
-
-      if (desc.includes("tesco") || desc.includes("asda")) category = "Groceries";
-      else if (desc.includes("uber") || desc.includes("train")) category = "Transport";
-      else if (desc.includes("netflix") || desc.includes("spotify")) category = "Entertainment";
-      else if (desc.includes("rent") || desc.includes("mortgage")) category = "Housing";
-      else if (desc.includes("gym") || desc.includes("fitness")) category = "Health";
-
-      categories[category] = (categories[category] || 0) + value;
-    });
-
-    for (let [cat, amt] of Object.entries(categories)) {
-      if (amt > income * 0.2) {
-        tips.push(`⚠️ You're spending a lot on ${cat}. Consider trimming this to save more.`);
+  useEffect(() => {
+    const db = getFirestore(app);
+    const ref = doc(db, "users", "demoUser");
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setCategories(data.categories || {});
+        setHistory(data.history || []);
       }
-    }
-
-    setCategorized(categories);
-    setAiTips(tips);
-  };
-
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Spending Summary", 14, 20);
-    const rows = Object.entries(categorized).map(([cat, amt]) => [cat, `£${amt.toFixed(2)}`]);
-    autoTable(doc, {
-      startY: 30,
-      head: [["Category", "Amount"]],
-      body: rows
     });
-    doc.save("spending_summary.pdf");
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const totalSpending = Object.values(categories).reduce(
+      (sum, cat) => sum + (cat.total || 0),
+      0
+    );
+    setTotal(totalSpending);
+  }, [categories]);
+
+  const handleEdit = async (catName, subName, newVal) => {
+    const updated = { ...categories };
+    updated[catName].subcategories[subName] = Number(newVal);
+    updated[catName].total = Object.values(updated[catName].subcategories).reduce((sum, val) => sum + val, 0);
+    setCategories(updated);
+    const db = getFirestore(app);
+    const ref = doc(db, "users", "demoUser");
+    await setDoc(ref, { categories: updated }, { merge: true });
   };
 
-  const totalDebt = debts.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
-  const monthlyTarget = targetMonths > 0 ? (totalDebt / targetMonths).toFixed(2) : 0;
-
-  const chartData = {
-    labels: Object.keys(categorized),
+  const categoryData = {
+    labels: Object.keys(categories),
     datasets: [
       {
         label: "Spending by Category",
-        data: Object.values(categorized),
-        backgroundColor: [
-          "#4CAF50",
-          "#2196F3",
-          "#FFC107",
-          "#FF5722",
-          "#9C27B0",
-          "#795548"
-        ]
+        data: Object.values(categories).map(cat => cat.total),
+        backgroundColor: ["#4ade80", "#facc15", "#60a5fa", "#f87171", "#c084fc"],
+        hoverOffset: 10,
       }
     ]
   };
 
-  const savingsOverTime = {
-    labels: savings.map((s, i) => `Entry ${i + 1}`),
+  const chartOptions = {
+    plugins: {
+      tooltip: { enabled: true },
+      legend: {
+        display: true,
+        position: "bottom",
+      },
+    },
+    animation: {
+      animateScale: true,
+      animateRotate: true
+    }
+  };
+
+  const lineChartData = {
+    labels: history.map(h => h.month),
     datasets: [
       {
-        label: "Savings Added",
-        data: savings.map((_, i) => (i + 1) * 50),
+        label: 'Total Spending Over Time',
+        data: history.map(h => h.total),
         fill: false,
-        borderColor: "#4CAF50",
+        borderColor: '#4ade80',
         tension: 0.1
       }
     ]
   };
 
-  const updateChallengeProgress = () => {
-    const totalSteps = 3;
-    let progress = 0;
-    if (fileName) progress++;
-    if (savings.length > 0) progress++;
-    if (Object.keys(categorized).length > 0) progress++;
-    const newProgress = (progress / totalSteps) * 100;
-    setChallengeProgress(newProgress);
-    if (progress === totalSteps) {
-      setChallengeComplete(true);
-      setStreak(streak + 1);
-      setRewardMessage("🔥 Daily Streak Achieved! +10 Sage Points");
-      setSagePoints(sagePoints + 10);
+  const lineOptions = {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: { mode: 'index', intersect: false }
+    },
+    interaction: { mode: 'nearest', axis: 'x', intersect: false },
+    scales: {
+      y: { beginAtZero: true }
     }
   };
 
   return (
-    <div className={darkMode ? "dark bg-gray-900 text-white min-h-screen" : "bg-gray-50 text-black min-h-screen transition-all duration-300 ease-in-out"}>
+    <div className="min-h-screen bg-gray-50 font-sans">
       <NavBar />
-      <main className="max-w-5xl mx-auto p-6 font-sans">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-green-700">WealthSage Dashboard</h1>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="px-4 py-2 border rounded text-sm text-white bg-gray-700 hover:bg-gray-600"
-          >
-            {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-          </button>
+      <main className="max-w-6xl mx-auto p-6 space-y-6">
+        <h1 className="text-3xl font-bold text-green-700">Welcome Back</h1>
+
+        <div className="bg-white p-4 rounded-lg shadow">
+          <p className="italic text-sm text-gray-600">“A goal without a plan is just a wish.” – Antoine de Saint-Exupéry</p>
         </div>
 
-        <div className="mb-6 text-center bg-gradient-to-br from-green-200 via-white to-green-100 p-6 rounded shadow animate-fade-in">
-          <h2 className="text-xl font-semibold">Track your savings, analyze your spending, and earn rewards!</h2>
-          <p className="text-sm text-gray-700 italic">“A goal without a plan is just a wish.” – Antoine de Saint-Exupéry</p>
-        </div>
-
-        {rewardMessage && (
-          <div className="mb-4 p-4 text-center text-green-800 bg-green-100 rounded shadow animate-pulse">
-            {rewardMessage}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-2">Your Budget Breakdown</h2>
+            <Doughnut data={categoryData} options={chartOptions} />
+            <p className="text-center text-sm mt-4">Total: £{total.toLocaleString()}</p>
           </div>
-        )}
 
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-2">🎁 Sage Store</h2>
-          <div className="flex gap-4 overflow-x-auto">
-            {rewards.map((reward, idx) => (
-              <div key={idx} className="p-4 min-w-[200px] bg-white border rounded shadow">
-                <div className="text-3xl mb-2">{reward.icon}</div>
-                <h3 className="font-bold text-lg">{reward.name}</h3>
-                <p className="text-sm">Cost: {reward.cost} Sage Points</p>
-                <button
-                  className="mt-2 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                  onClick={() => claimReward(reward)}
-                >
-                  Redeem
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-2">Subcategory Breakdown</h2>
+            <ul className="text-sm space-y-4">
+              {Object.entries(categories).map(([name, cat]) => {
+                const subData = {
+                  labels: Object.keys(cat.subcategories || {}),
+                  datasets: [
+                    {
+                      label: `${name} Subcategories`,
+                      data: Object.values(cat.subcategories || {}),
+                      backgroundColor: ["#86efac", "#fde68a", "#93c5fd", "#fca5a5", "#d8b4fe"],
+                      hoverOffset: 8,
+                    }
+                  ]
+                };
 
-        {claimedRewards.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-semibold">🎉 Claimed Rewards</h3>
-            <ul className="list-disc ml-5">
-              {claimedRewards.map((r, i) => (
-                <li key={i}>{r}</li>
-              ))}
+                return (
+                  <li key={name} className="border-b pb-3">
+                    <span className="font-medium text-gray-700">{name}:</span>
+                    <div className="my-2 w-40">
+                      <Doughnut data={subData} options={chartOptions} />
+                    </div>
+                    <ul className="ml-4 mt-2 space-y-1 text-gray-600">
+                      {cat.subcategories && Object.entries(cat.subcategories).map(([sub, val]) => (
+                        <li key={sub} className="flex items-center gap-2">
+                          • {sub}: £
+                          <input
+                            type="number"
+                            defaultValue={val}
+                            className="border p-1 text-sm rounded w-20"
+                            onBlur={(e) => handleEdit(name, sub, e.target.value)}
+                          />
+                          <span className="text-xs text-gray-500">({((val / cat.total) * 100).toFixed(1)}%)</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                );
+              })}
             </ul>
           </div>
+        </section>
+
+        {history.length > 0 && (
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-2">Spending Trend</h2>
+            <Line data={lineChartData} options={lineOptions} />
+          </div>
         )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-2">Savings Goal</h2>
+            <p>Goal: £{monthlyGoal}</p>
+            <p>Saved: £{savedAmount}</p>
+            <div className="h-4 w-full bg-gray-200 rounded-full mt-2">
+              <div
+                className="h-full bg-green-500 rounded-full"
+                style={{ width: `${(savedAmount / monthlyGoal) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-2">CV Score</h2>
+            <p className="text-4xl font-bold text-green-600">{cvScore}%</p>
+            <p className="text-sm mt-2 text-gray-600">{aiTip}</p>
+          </div>
+        </div>
       </main>
     </div>
   );
