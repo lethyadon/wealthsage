@@ -1,6 +1,7 @@
 {
   "name": "wealthsage",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,6 +12,7 @@
     "axios": "^1.6.8",
     "chart.js": "^4.4.2",
     "firebase": "^9.22.2",
+    "framer-motion": "^10.16.1",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.5.29",
     "lucide-react": "^0.268.0",
