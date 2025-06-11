@@ -21,3 +21,4 @@
     "react-dom": "18.2.0"
   }
 }
+Fix: Correct malformed package.json
