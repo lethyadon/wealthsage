@@ -14,6 +14,14 @@ export default function Career() {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
+import { fetchJobListings } from "../lib/fetchJobs";
+
+useEffect(() => {
+  fetchJobListings("software developer").then((listings) => {
+    setSavedJobs(listings); // or a new state like setLiveJobs(listings)
+  });
+}, []);
+
     const db = getFirestore(app);
     const ref = doc(db, "users", "demoUser");
     const unsub = onSnapshot(ref, (snap) => {
