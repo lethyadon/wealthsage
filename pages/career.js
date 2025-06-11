@@ -130,7 +130,7 @@ export default function Career() {
       const url = await getDownloadURL(storageRef);
       console.log("Uploaded CV URL:", url);
       setTimeout(() => {
-        setCvScore(92);
+        setCvScore(prev => Math.min(100, prev + Math.floor(Math.random() * 8 + 4)));
         setAiTip("Your CV is well-structured. Consider targeting roles using specific keywords.");
         setUploading(false);
         setFilters({ ...filters, query: "developer" });
@@ -148,7 +148,7 @@ export default function Career() {
   };
 
   const handleApplyJob = async (job) => {
-    const newJob = { role: job.title, company: job.company, status: "Applied" };
+    const newJob = { role: job.title, company: job.company, status: "Applied", appliedAt: new Date().toISOString() };
     const updatedJobs = [...jobs, newJob];
     setJobs(updatedJobs);
     const db = getFirestore(app);
@@ -161,6 +161,7 @@ export default function Career() {
       <NavBar />
       <main className="max-w-5xl mx-auto p-6 space-y-6">
         <h1 className="text-3xl font-bold text-green-700">Career Centre</h1>
+
         <section className="bg-white p-4 rounded shadow">
           <h2 className="text-lg font-semibold mb-2">📄 Your Uploaded CVs</h2>
           <ul className="list-disc ml-5 space-y-1">
@@ -170,6 +171,12 @@ export default function Career() {
               </li>
             ))}
           </ul>
+        </section>
+
+        <section className="bg-white p-4 rounded shadow animate-fade-in transition-all duration-500 ease-in-out">
+          <h2 className="text-lg font-semibold">🧠 CV Score & Tip</h2>
+          <p className="text-green-800 font-bold text-xl animate-pulse">CV Score: {cvScore}%</p>
+          <p className="text-sm italic">💡 {aiTip}</p>
         </section>
 
         <section className="bg-white p-4 rounded shadow space-y-3">
@@ -184,7 +191,21 @@ export default function Career() {
                 {highlightedMatches[i] && (
                   <p className="text-sm text-green-700">Matched Keywords: {highlightedMatches[i].join(", ")}</p>
                 )}
-                <button onClick={() => handleApplyJob(job)} className="text-sm mt-1 px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Apply Now</button>
+                <div className="mt-2 space-x-2">
+                  <button onClick={() => handleApplyJob(job)} className="text-sm px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Apply Now</button>
+                  <button onClick={() => handleSaveJob(job)} className="text-sm px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">Save</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold">📬 Application Timeline</h2>
+          <ul className="list-disc ml-5 space-y-1">
+            {jobs.map((job, i) => (
+              <li key={i}>
+                {job.role} @ {job.company} – <span className="text-green-600">{job.status}</span> <span className="text-xs text-gray-500">({new Date(job.appliedAt).toLocaleDateString()})</span>
               </li>
             ))}
           </ul>
