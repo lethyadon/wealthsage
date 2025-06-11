@@ -1,4 +1,5 @@
 // pages/career.js
+npm install axios
 import NavBar from "../components/NavBar";
 import { useEffect, useState } from "react";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
