@@ -1,10 +1,10 @@
 // pages/career.js
-npm install axios
 import NavBar from "../components/NavBar";
 import { useEffect, useState } from "react";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import app from "../firebase";
+import axios from "axios";
 
 export default function Career() {
   const [cvScore, setCvScore] = useState(85);
@@ -12,16 +12,9 @@ export default function Career() {
   const [jobs, setJobs] = useState([]);
   const [savedJobs, setSavedJobs] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [liveJobs, setLiveJobs] = useState([]);
 
   useEffect(() => {
-import { fetchJobListings } from "../lib/fetchJobs";
-
-useEffect(() => {
-  fetchJobListings("software developer").then((listings) => {
-    setSavedJobs(listings); // or a new state like setLiveJobs(listings)
-  });
-}, []);
-
     const db = getFirestore(app);
     const ref = doc(db, "users", "demoUser");
     const unsub = onSnapshot(ref, (snap) => {
@@ -32,6 +25,40 @@ useEffect(() => {
       }
     });
     return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const fetchJobListings = async (query = "remote") => {
+      const app_id = "ffec525b";
+      const app_key = "a1d6d5389f23a7ffaaf5c1b7f24333f2";
+      const url = `https://api.adzuna.com/v1/api/jobs/gb/search/1`;
+
+      try {
+        const res = await axios.get(url, {
+          params: {
+            app_id,
+            app_key,
+            what: query,
+            where: "United Kingdom",
+            results_per_page: 10,
+            content_type: "application/json",
+          },
+        });
+
+        const results = res.data.results.map((job) => ({
+          title: job.title,
+          company: job.company.display_name,
+          location: job.location.display_name,
+          url: job.redirect_url,
+          description: job.description,
+        }));
+        setLiveJobs(results);
+      } catch (error) {
+        console.error("Job fetch error:", error.message);
+      }
+    };
+
+    fetchJobListings();
   }, []);
 
   const handleStatusChange = async (index, newStatus) => {
@@ -109,6 +136,20 @@ useEffect(() => {
                 <p className="text-xs text-gray-500">{job.location} – {job.source}</p>
               </li>
             )) : <p className="text-sm text-gray-500">No saved jobs yet.</p>}
+          </ul>
+        </section>
+
+        <section className="bg-white p-4 rounded shadow space-y-3">
+          <h2 className="text-xl font-semibold">🌍 Live Job Listings</h2>
+          <ul className="space-y-2">
+            {liveJobs.map((job, i) => (
+              <li key={i} className="p-2 border rounded bg-gray-100">
+                <a href={job.url} target="_blank" rel="noopener noreferrer" className="font-medium text-green-700 hover:underline">
+                  {job.title} @ {job.company}
+                </a>
+                <p className="text-xs text-gray-500">{job.location}</p>
+              </li>
+            ))}
           </ul>
         </section>
       </main>
