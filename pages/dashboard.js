@@ -35,21 +35,26 @@ export default function Dashboard() {
   const [savings, setSavings] = useState([]);
   const [goal, setGoal] = useState(500);
   const [cvScore, setCvScore] = useState(85);
+  const [income, setIncome] = useState(0);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
-    if (file && file.type === "text/csv") {
+    if (file && (file.type === "text/csv" || file.type === "application/pdf")) {
       setFileName(file.name);
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          setParsedData(results.data);
-          categorizeSpending(results.data);
-        }
-      });
+      if (file.type === "text/csv") {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            setParsedData(results.data);
+            categorizeSpending(results.data);
+          }
+        });
+      } else {
+        alert("PDF upload support is coming soon!");
+      }
     } else {
-      alert("Please upload a valid CSV file.");
+      alert("Please upload a valid CSV or PDF file.");
     }
   };
 
@@ -83,6 +88,7 @@ export default function Dashboard() {
   };
 
   const savingsTotal = savings.reduce((sum, s) => sum + s.amount, 0);
+  const requiredMonthlySavings = income > 0 ? Math.max(0, ((goal - savingsTotal) / 12).toFixed(2)) : null;
 
   return (
     <div className="bg-gray-100 min-h-screen">
@@ -160,8 +166,18 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white p-4 rounded shadow mb-6">
-          <h3 className="text-lg font-semibold mb-2">📁 Upload Statement (CSV)</h3>
-          <input type="file" accept=".csv" onChange={handleFileUpload} className="p-2 border rounded" />
+          <h3 className="text-lg font-semibold mb-2">📁 Upload Statement (CSV or PDF)</h3>
+          <input type="file" accept=".csv,application/pdf" onChange={handleFileUpload} className="p-2 border rounded" />
+        </div>
+
+        <div className="bg-white p-4 rounded shadow mb-6">
+          <label className="block font-medium mb-1">Monthly Income (£)</label>
+          <input
+            type="number"
+            value={income}
+            onChange={(e) => setIncome(parseFloat(e.target.value) || 0)}
+            className="p-2 border rounded w-full"
+          />
         </div>
 
         {aiTips.length > 0 && (
@@ -180,6 +196,7 @@ export default function Dashboard() {
             <h3 className="text-lg font-semibold">Savings Goal</h3>
             <p>Goal: £{goal}</p>
             <p>Saved: £{savingsTotal}</p>
+            {requiredMonthlySavings && <p>Required Monthly Savings: £{requiredMonthlySavings}</p>}
             <div className="w-full bg-gray-300 h-4 rounded mt-2">
               <div
                 className="bg-green-600 h-4 rounded"
@@ -194,50 +211,6 @@ export default function Dashboard() {
             <p className="text-sm">Consider optimizing your CV keywords for higher job matches.</p>
           </div>
         </div>
-<div className="bg-white p-4 rounded shadow mb-6">
-  <h3 className="text-lg font-semibold mb-2">💰 Income & Savings Projection</h3>
-  <form
-    onSubmit={(e) => {
-      e.preventDefault();
-      const incomeInput = parseFloat(e.target.income.value);
-      if (!isNaN(incomeInput) && incomeInput > 0) {
-        setIncome(incomeInput);
-      }
-    }}
-    className="flex gap-2 flex-wrap mb-4"
-  >
-    <input
-      type="number"
-      step="0.01"
-      name="income"
-      placeholder="Enter monthly income (£)"
-      className="p-2 border rounded w-64"
-    />
-    <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-      Update
-    </button>
-  </form>
-
-  {income > 0 && (
-    <div>
-const [income, setIncome] = useState(0);
-
-      <p className="text-sm">Your income: <strong>£{income}</strong></p>
-      <p className="text-sm">Target to save per month: <strong>£{(goal / 6).toFixed(2)}</strong> <span className="text-gray-500 italic">(Assuming 6-month target)</span></p>
-      <p className="text-sm">Remaining to goal: <strong>£{Math.max(goal - savingsTotal, 0).toFixed(2)}</strong></p>
-
-      <div className="w-full bg-gray-300 h-4 rounded mt-2">
-        <div
-          className="bg-blue-600 h-4 rounded"
-          style={{
-            width: `${Math.min((savingsTotal / goal) * 100, 100)}%`
-          }}
-        ></div>
-      </div>
-    </div>
-  )}
-</div>
-
       </main>
     </div>
   );
