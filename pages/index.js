@@ -1,4 +1,4 @@
-// pages/index.js
+// pages/index.js (Landing Page)
 import Link from 'next/link';
 
 export default function Home() {
