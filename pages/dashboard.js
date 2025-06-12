@@ -34,28 +34,36 @@ export default function Dashboard() {
   const [aiTips, setAiTips] = useState([]);
   const [savings, setSavings] = useState([]);
   const [goal, setGoal] = useState(500);
+  const [goalDate, setGoalDate] = useState("");
   const [cvScore, setCvScore] = useState(85);
   const [income, setIncome] = useState(0);
+  const [investmentSuggestions, setInvestmentSuggestions] = useState([
+    "📈 Consider putting £100/month into a low-cost index fund",
+    "🏦 Open a high-interest savings account to reach your short-term goals",
+    "💸 Look into employer pension contributions if available"
+  ]);
 
   const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file && (file.type === "text/csv" || file.type === "application/pdf")) {
-      setFileName(file.name);
-      if (file.type === "text/csv") {
-        Papa.parse(file, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (results) => {
-            setParsedData(results.data);
-            categorizeSpending(results.data);
-          }
-        });
+    const files = Array.from(e.target.files);
+    files.forEach((file) => {
+      if (file && (file.type === "text/csv" || file.type === "application/pdf")) {
+        setFileName(file.name);
+        if (file.type === "text/csv") {
+          Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              setParsedData(results.data);
+              categorizeSpending(results.data);
+            }
+          });
+        } else {
+          alert("PDF parsing is coming soon! Upload accepted but not yet processed.");
+        }
       } else {
-        alert("PDF upload support is coming soon!");
+        alert("Please upload a valid CSV or PDF file.");
       }
-    } else {
-      alert("Please upload a valid CSV or PDF file.");
-    }
+    });
   };
 
   const categorizeSpending = (transactions) => {
@@ -88,13 +96,34 @@ export default function Dashboard() {
   };
 
   const savingsTotal = savings.reduce((sum, s) => sum + s.amount, 0);
-  const requiredMonthlySavings = income > 0 ? Math.max(0, ((goal - savingsTotal) / 12).toFixed(2)) : null;
+  const monthsLeft = goalDate ? Math.max(1, Math.ceil((new Date(goalDate) - new Date()) / (1000 * 60 * 60 * 24 * 30))) : 12;
+  const requiredMonthlySavings = income > 0 ? Math.max(0, ((goal - savingsTotal) / monthsLeft).toFixed(2)) : null;
 
   return (
     <div className="bg-gray-100 min-h-screen">
       <NavBar />
       <main className="max-w-5xl mx-auto p-6">
         <h1 className="text-2xl font-bold mb-4 text-green-700">Welcome Back</h1>
+
+        <div className="bg-white p-4 rounded shadow mb-4">
+          <label className="block font-medium mb-1">Monthly Income (£)</label>
+          <input
+            type="number"
+            value={income}
+            onChange={(e) => setIncome(parseFloat(e.target.value) || 0)}
+            className="p-2 border rounded w-full"
+          />
+        </div>
+
+        <div className="bg-white p-4 rounded shadow mb-4">
+          <label className="block font-medium mb-1">Target Goal Date</label>
+          <input
+            type="date"
+            value={goalDate}
+            onChange={(e) => setGoalDate(e.target.value)}
+            className="p-2 border rounded w-full"
+          />
+        </div>
 
         <div className="bg-white p-4 rounded shadow mb-6">
           <h2 className="text-lg font-semibold mb-2">➕ Add a Spending Entry</h2>
@@ -167,17 +196,7 @@ export default function Dashboard() {
 
         <div className="bg-white p-4 rounded shadow mb-6">
           <h3 className="text-lg font-semibold mb-2">📁 Upload Statement (CSV or PDF)</h3>
-          <input type="file" accept=".csv,application/pdf" onChange={handleFileUpload} className="p-2 border rounded" />
-        </div>
-
-        <div className="bg-white p-4 rounded shadow mb-6">
-          <label className="block font-medium mb-1">Monthly Income (£)</label>
-          <input
-            type="number"
-            value={income}
-            onChange={(e) => setIncome(parseFloat(e.target.value) || 0)}
-            className="p-2 border rounded w-full"
-          />
+          <input type="file" accept=".csv,application/pdf" onChange={handleFileUpload} multiple className="p-2 border rounded w-full" />
         </div>
 
         {aiTips.length > 0 && (
@@ -197,6 +216,7 @@ export default function Dashboard() {
             <p>Goal: £{goal}</p>
             <p>Saved: £{savingsTotal}</p>
             {requiredMonthlySavings && <p>Required Monthly Savings: £{requiredMonthlySavings}</p>}
+            <p className="text-sm text-gray-600">{monthsLeft} months remaining</p>
             <div className="w-full bg-gray-300 h-4 rounded mt-2">
               <div
                 className="bg-green-600 h-4 rounded"
@@ -210,6 +230,15 @@ export default function Dashboard() {
             <p className="text-green-600 text-2xl font-bold">{cvScore}%</p>
             <p className="text-sm">Consider optimizing your CV keywords for higher job matches.</p>
           </div>
+        </div>
+
+        <div className="bg-white p-4 rounded shadow mt-6">
+          <h3 className="text-lg font-semibold mb-2">💹 Investment Suggestions</h3>
+          <ul className="list-disc ml-5">
+            {investmentSuggestions.map((s, i) => (
+              <li key={i}>{s}</li>
+            ))}
+          </ul>
         </div>
       </main>
     </div>
