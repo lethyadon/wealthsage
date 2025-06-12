@@ -58,10 +58,10 @@ export default function Dashboard() {
             }
           });
         } else {
-          alert("PDF parsing is coming soon! Upload accepted but not yet processed.");
+          alert("PDF parsing coming soon: accepted but not processed yet.");
         }
       } else {
-        alert("Please upload a valid CSV or PDF file.");
+        alert("Upload a valid CSV or PDF.");
       }
     });
   };
@@ -105,24 +105,25 @@ export default function Dashboard() {
       <main className="max-w-5xl mx-auto p-6">
         <h1 className="text-2xl font-bold mb-4 text-green-700">Welcome Back</h1>
 
-        <div className="bg-white p-4 rounded shadow mb-4">
-          <label className="block font-medium mb-1">Monthly Income (£)</label>
-          <input
-            type="number"
-            value={income}
-            onChange={(e) => setIncome(parseFloat(e.target.value) || 0)}
-            className="p-2 border rounded w-full"
-          />
-        </div>
-
-        <div className="bg-white p-4 rounded shadow mb-4">
-          <label className="block font-medium mb-1">Target Goal Date</label>
-          <input
-            type="date"
-            value={goalDate}
-            onChange={(e) => setGoalDate(e.target.value)}
-            className="p-2 border rounded w-full"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="bg-white p-4 rounded shadow">
+            <label className="block font-medium mb-1">Monthly Income (£)</label>
+            <input
+              type="number"
+              value={income}
+              onChange={(e) => setIncome(parseFloat(e.target.value) || 0)}
+              className="p-2 border rounded w-full"
+            />
+          </div>
+          <div className="bg-white p-4 rounded shadow">
+            <label className="block font-medium mb-1">Target Goal Date</label>
+            <input
+              type="date"
+              value={goalDate}
+              onChange={(e) => setGoalDate(e.target.value)}
+              className="p-2 border rounded w-full"
+            />
+          </div>
         </div>
 
         <div className="bg-white p-4 rounded shadow mb-6">
@@ -135,7 +136,6 @@ export default function Dashboard() {
               const sub = form.subcategory.value;
               const amt = parseFloat(form.amount.value);
               if (!cat || !amt) return;
-
               setCategorized((prev) => ({ ...prev, [cat]: (prev[cat] || 0) + amt }));
               setSubcategories((prev) => ({
                 ...prev,
@@ -155,42 +155,11 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="bg-white p-4 rounded shadow">
             <h3 className="text-lg font-semibold mb-2">Your Budget Breakdown</h3>
-            <Doughnut
-              data={{
-                labels: Object.keys(categorized),
-                datasets: [
-                  {
-                    label: "Spending by Category",
-                    data: Object.values(categorized),
-                    backgroundColor: ["#4CAF50", "#2196F3", "#FFC107", "#FF5722", "#9C27B0", "#795548"]
-                  }
-                ]
-              }}
-              options={{
-                plugins: { tooltip: { enabled: true }, legend: { display: true } },
-                animation: { animateRotate: true, animateScale: true }
-              }}
-            />
+            <Doughnut data={{ labels: Object.keys(categorized), datasets: [{ label: "Spending by Category", data: Object.values(categorized), backgroundColor: ["#4CAF50", "#2196F3", "#FFC107", "#FF5722", "#9C27B0", "#795548"] }] }} options={{ plugins: { tooltip: { enabled: true }, legend: { display: true } }, animation: { animateRotate: true, animateScale: true } }} />
           </div>
-
           <div className="bg-white p-4 rounded shadow">
             <h3 className="text-lg font-semibold mb-2">Subcategory Breakdown</h3>
-            <Doughnut
-              data={{
-                labels: Object.keys(subcategories),
-                datasets: [
-                  {
-                    label: "Subcategory Spending",
-                    data: Object.values(subcategories),
-                    backgroundColor: ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"]
-                  }
-                ]
-              }}
-              options={{
-                plugins: { tooltip: { enabled: true }, legend: { display: true } },
-                animation: { animateRotate: true, animateScale: true }
-              }}
-            />
+            <Doughnut data={{ labels: Object.keys(subcategories), datasets: [{ label: "Subcategory Spending", data: Object.values(subcategories), backgroundColor: ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"] }] }} options={{ plugins: { tooltip: { enabled: true }, legend: { display: true } }, animation: { animateRotate: true, animateScale: true } }} />
           </div>
         </div>
 
@@ -203,9 +172,7 @@ export default function Dashboard() {
           <div className="bg-yellow-100 p-4 rounded shadow mb-6">
             <h3 className="font-semibold mb-2">💡 AI Suggestions</h3>
             <ul className="list-disc ml-5">
-              {aiTips.map((tip, idx) => (
-                <li key={idx}>{tip}</li>
-              ))}
+              {aiTips.map((tip, idx) => (<li key={idx}>{tip}</li>))}
             </ul>
           </div>
         )}
@@ -218,10 +185,7 @@ export default function Dashboard() {
             {requiredMonthlySavings && <p>Required Monthly Savings: £{requiredMonthlySavings}</p>}
             <p className="text-sm text-gray-600">{monthsLeft} months remaining</p>
             <div className="w-full bg-gray-300 h-4 rounded mt-2">
-              <div
-                className="bg-green-600 h-4 rounded"
-                style={{ width: `${(savingsTotal / goal) * 100}%` }}
-              ></div>
+              <div className="bg-green-600 h-4 rounded" style={{ width: `${(savingsTotal / goal) * 100}%` }}></div>
             </div>
           </div>
 
@@ -235,9 +199,7 @@ export default function Dashboard() {
         <div className="bg-white p-4 rounded shadow mt-6">
           <h3 className="text-lg font-semibold mb-2">💹 Investment Suggestions</h3>
           <ul className="list-disc ml-5">
-            {investmentSuggestions.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
+            {investmentSuggestions.map((s, i) => (<li key={i}>{s}</li>))}
           </ul>
         </div>
       </main>
