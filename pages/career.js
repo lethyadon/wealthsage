@@ -1,5 +1,5 @@
 // pages/career.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AiOutlineRobot } from 'react-icons/ai';
 import NavBar from '../components/NavBar';
 
@@ -7,33 +7,14 @@ export default function CareerPage() {
   const [cvFile, setCvFile] = useState(null);
   const [cvScore, setCvScore] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
-  const [jobs, setJobs] = useState([
-    {
-      title: 'Marketing Coordinator',
-      company: 'Acme Co.',
-      location: 'Remote',
-      url: '#'
-    },
-    {
-      title: 'Customer Success Manager',
-      company: 'Brightpath',
-      location: 'London',
-      url: '#'
-    },
-    {
-      title: 'Junior Account Executive',
-      company: 'Loop Ltd.',
-      location: 'Birmingham',
-      url: '#'
-    }
-  ]);
+  const [jobs, setJobs] = useState([]);
 
   const handleCVUpload = (e) => {
     const file = e.target.files[0];
     setCvFile(file);
-    // Simulated scoring
+    // Simulated scoring logic
     setTimeout(() => {
-      setCvScore(78);
+      setCvScore(85);
       setSuggestions([
         '📝 Add quantifiable achievements to work history.',
         '📅 Include most recent role with clear dates.',
@@ -41,6 +22,27 @@ export default function CareerPage() {
       ]);
     }, 1000);
   };
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const res = await fetch(
+          `https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id=ffec525b&app_key=a1d6d5389f23a7ffaaf5c1b7f24333f2&results_per_page=10&what=marketing&content-type=application/json`
+        );
+        const data = await res.json();
+        const listings = data.results.map(job => ({
+          title: job.title,
+          company: job.company.display_name,
+          location: job.location.display_name,
+          url: job.redirect_url
+        }));
+        setJobs(listings);
+      } catch (err) {
+        console.error('Failed to fetch jobs:', err);
+      }
+    };
+    fetchJobs();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 text-black">
@@ -73,7 +75,7 @@ export default function CareerPage() {
           <ul className="space-y-3">
             {jobs.map((job, i) => (
               <li key={i} className="p-4 border rounded bg-gray-100">
-                <a href={job.url} className="text-green-700 font-medium hover:underline text-lg">
+                <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-green-700 font-medium hover:underline text-lg">
                   {job.title} @ {job.company}
                 </a>
                 <p className="text-sm text-gray-500">{job.location}</p>
