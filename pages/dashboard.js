@@ -30,6 +30,7 @@ export default function Dashboard() {
   const handleCSVUpload = (e) => {
     const file = e.target.files[0];
     if (file && file.type === "text/csv") {
+      setFileName(file.name);
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
@@ -53,12 +54,10 @@ export default function Dashboard() {
           text += strings + "\n";
         }
         const lines = text.split("\n").filter(line => line.trim());
-        const transactions = lines.map(line => {
-          return {
-            Description: line,
-            Amount: line.match(/-?\d+(\.\d{2})?/)?.[0] || "0"
-          };
-        });
+        const transactions = lines.map(line => ({
+          Description: line,
+          Amount: line.match(/-?\d+(\.\d{2})?/)?.[0] || "0"
+        }));
         setParsedData(transactions);
         categorizeSpending(transactions);
         setStreak(prev => prev + 1);
