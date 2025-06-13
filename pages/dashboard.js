@@ -1,6 +1,6 @@
 // pages/dashboard.js
 import NavBar from "../components/NavBar";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Papa from "papaparse";
 import { Doughnut } from "react-chartjs-2";
 import jsPDF from "jspdf";
@@ -11,8 +11,8 @@ import {
   Tooltip,
   Legend
 } from "chart.js";
-import { pdfjs } from "react-pdf";
 import { AiOutlineRobot } from "react-icons/ai";
+import { pdfjs } from "react-pdf";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -40,8 +40,33 @@ export default function Dashboard() {
         }
       });
       setUploadError(null);
+    } else if (file && file.type === "application/pdf") {
+      const reader = new FileReader();
+      reader.onload = async function () {
+        const typedarray = new Uint8Array(reader.result);
+        const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
+        let text = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const strings = content.items.map(item => item.str).join(" ");
+          text += strings + "\n";
+        }
+        const lines = text.split("\n").filter(line => line.trim());
+        const transactions = lines.map(line => {
+          return {
+            Description: line,
+            Amount: line.match(/-?\d+(\.\d{2})?/)?.[0] || "0"
+          };
+        });
+        setParsedData(transactions);
+        categorizeSpending(transactions);
+        setStreak(prev => prev + 1);
+      };
+      reader.readAsArrayBuffer(file);
+      setUploadError(null);
     } else {
-      setUploadError("Only CSV files are supported for now.");
+      setUploadError("Please upload a CSV or PDF file.");
     }
   };
 
@@ -60,9 +85,12 @@ export default function Dashboard() {
       categories[category] = (categories[category] || 0) + value;
     });
     for (let [cat, amt] of Object.entries(categories)) {
-      if (amt > income * 0.2) {
-        tips.push(`⚠️ High spend on ${cat}`);
-      }
+      const ratio = income > 0 ? amt / income : 0;
+      let severity = "";
+      if (ratio > 0.3) severity = "🔴 High";
+      else if (ratio > 0.15) severity = "🟠 Medium";
+      else severity = "🟢 Low";
+      tips.push(`${severity} spend on ${cat} (£${amt.toFixed(2)})`);
     }
     setCategorized(categories);
     setAiTips(tips);
@@ -110,7 +138,7 @@ export default function Dashboard() {
         <p className="text-green-700 mb-4">You need to save: <strong>£{monthlyTarget}</strong> per month</p>
 
         <div className="mb-6">
-          <input type="file" accept=".csv" onChange={handleCSVUpload} className="mb-2" />
+          <input type="file" accept=".csv,.pdf" onChange={handleCSVUpload} className="mb-2" />
           {uploadError && <p className="text-red-600 text-sm">{uploadError}</p>}
           {fileName && <p className="text-sm">Uploaded: {fileName}</p>}
         </div>
