@@ -12,7 +12,7 @@ export default function CareerPage() {
   const handleCVUpload = (e) => {
     const file = e.target.files[0];
     setCvFile(file);
-    // Simulated scoring logic
+    // Simulated CV scoring logic
     setTimeout(() => {
       setCvScore(85);
       setSuggestions([
@@ -47,30 +47,30 @@ export default function CareerPage() {
   return (
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
-      <main className="max-w-5xl mx-auto p-6 space-y-8">
+      <main className="max-w-5xl mx-auto p-6 space-y-10">
         <h1 className="text-4xl font-bold text-green-700 mb-4">📈 Career Progress Tracker</h1>
 
-        <div className="bg-white p-6 rounded shadow space-y-4">
+        <section className="bg-white p-6 rounded shadow space-y-4">
           <h2 className="text-xl font-semibold">📄 Upload Your CV</h2>
           <input type="file" accept=".pdf,.doc,.docx" onChange={handleCVUpload} className="border p-2 rounded w-full" />
           {cvFile && <p className="text-sm text-gray-600">Uploaded: {cvFile.name}</p>}
-        </div>
+        </section>
 
         {cvScore !== null && (
-          <div className="bg-white p-6 rounded shadow space-y-4 animate-fade-in">
+          <section className="bg-white p-6 rounded shadow space-y-4 animate-fade-in">
             <h2 className="text-xl font-semibold flex items-center gap-2">🎯 CV Score: <span className="text-green-600">{cvScore}%</span></h2>
             <div className="bg-yellow-50 p-4 rounded">
               <h3 className="font-bold mb-2 flex items-center gap-1"><AiOutlineRobot /> Suggestions</h3>
-              <ul className="list-disc ml-6 text-sm">
+              <ul className="list-disc ml-6 text-sm space-y-1">
                 {suggestions.map((s, i) => (
                   <li key={i}>{s}</li>
                 ))}
               </ul>
             </div>
-          </div>
+          </section>
         )}
 
-        <div className="bg-white p-6 rounded shadow space-y-4">
+        <section className="bg-white p-6 rounded shadow space-y-4">
           <h2 className="text-xl font-semibold">🌍 Matching Job Listings</h2>
           <ul className="space-y-3">
             {jobs.map((job, i) => (
@@ -82,7 +82,7 @@ export default function CareerPage() {
               </li>
             ))}
           </ul>
-        </div>
+        </section>
 
         <div className="bg-green-100 p-6 rounded shadow text-center animate-fade-in">
           <h2 className="text-lg font-semibold text-green-900">✅ Keep going! You're one step closer to landing your dream job.</h2>
