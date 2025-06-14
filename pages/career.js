@@ -47,8 +47,8 @@ export default function CareerPage() {
   return (
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
-      <main className="max-w-4xl mx-auto p-6 space-y-6">
-        <h1 className="text-3xl font-bold text-green-700 mb-4">Career Helper</h1>
+      <main className="max-w-5xl mx-auto p-6 space-y-8">
+        <h1 className="text-4xl font-bold text-green-700 mb-4">📈 Career Progress Tracker</h1>
 
         <div className="bg-white p-6 rounded shadow space-y-4">
           <h2 className="text-xl font-semibold">📄 Upload Your CV</h2>
@@ -82,6 +82,10 @@ export default function CareerPage() {
               </li>
             ))}
           </ul>
+        </div>
+
+        <div className="bg-green-100 p-6 rounded shadow text-center animate-fade-in">
+          <h2 className="text-lg font-semibold text-green-900">✅ Keep going! You're one step closer to landing your dream job.</h2>
         </div>
       </main>
     </div>
