@@ -16,10 +16,9 @@ export default function Dashboard() {
   const [income, setIncome] = useState(0);
   const [goalAmount, setGoalAmount] = useState(0);
   const [deadline, setDeadline] = useState('');
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [categorized, setCategorized] = useState({});
   const [aiTips, setAiTips] = useState([]);
-  const [fileName, setFileName] = useState('');
   const [uploadError, setUploadError] = useState(null);
   const [streak, setStreak] = useState(0);
 
@@ -34,15 +33,21 @@ export default function Dashboard() {
   const categorizeSpending = (transactions) => {
     const categories = {};
     const tips = [];
+    const subscriptions = {};
+
     transactions.forEach(({ Description = 'Other', Amount = 0 }) => {
       let category = 'Other';
       const desc = Description.toLowerCase();
       const value = Math.abs(parseFloat(Amount));
+
       if (desc.includes('tesco') || desc.includes('asda')) category = 'Groceries';
       else if (desc.includes('uber') || desc.includes('train')) category = 'Transport';
-      else if (desc.includes('netflix') || desc.includes('spotify')) category = 'Entertainment';
-      else if (desc.includes('rent') || desc.includes('mortgage')) category = 'Housing';
+      else if (desc.includes('netflix') || desc.includes('spotify')) {
+        category = 'Entertainment';
+        subscriptions[desc] = (subscriptions[desc] || 0) + value;
+      } else if (desc.includes('rent') || desc.includes('mortgage')) category = 'Housing';
       else if (desc.includes('gym') || desc.includes('fitness')) category = 'Health';
+
       categories[category] = (categories[category] || 0) + value;
     });
 
@@ -54,48 +59,64 @@ export default function Dashboard() {
       else severity = '🟢 Low';
       tips.push(`${severity} spend on ${cat} (£${amt.toFixed(2)})`);
     }
+
+    for (let [sub, val] of Object.entries(subscriptions)) {
+      tips.push(`⚠️ Recurring subscription detected: ${sub} (£${val.toFixed(2)})`);
+    }
+
     setCategorized(categories);
     setAiTips(tips);
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    setFile(file);
-    setFileName(file.name);
+  const handleFileUpload = async (e) => {
+    const uploadedFiles = Array.from(e.target.files).slice(0, 3);
+    setFiles(uploadedFiles);
     setUploadError(null);
+    let allTransactions = [];
 
-    if (file && file.type === 'text/csv') {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          categorizeSpending(results.data);
-          setStreak(prev => prev + 1);
-        }
-      });
-    } else if (file && file.type === 'application/pdf') {
-      const reader = new FileReader();
-      reader.onload = async function () {
-        const typedarray = new Uint8Array(reader.result);
-        const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
-        let text = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const strings = content.items.map(item => item.str).join(' ');
-          text += strings + '\n';
-        }
-        const lines = text.split('\n').filter(line => line.trim());
-        const transactions = lines.map(line => ({
-          Description: line,
-          Amount: line.match(/-?\d+(\.\d{2})?/)?.[0] || '0'
-        }));
-        categorizeSpending(transactions);
-        setStreak(prev => prev + 1);
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      setUploadError('Please upload a valid CSV or PDF file.');
+    for (const file of uploadedFiles) {
+      if (file.type === 'text/csv') {
+        await new Promise((resolve) => {
+          Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              allTransactions = [...allTransactions, ...results.data];
+              resolve();
+            }
+          });
+        });
+      } else if (file.type === 'application/pdf') {
+        const reader = new FileReader();
+        await new Promise((resolve) => {
+          reader.onload = async function () {
+            const typedarray = new Uint8Array(reader.result);
+            const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
+            let text = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const content = await page.getTextContent();
+              const strings = content.items.map(item => item.str).join(' ');
+              text += strings + '\n';
+            }
+            const lines = text.split('\n').filter(line => line.trim());
+            const transactions = lines.map(line => ({
+              Description: line,
+              Amount: line.match(/-?\d+(\.\d{2})?/)?.[0] || '0'
+            }));
+            allTransactions = [...allTransactions, ...transactions];
+            resolve();
+          };
+          reader.readAsArrayBuffer(file);
+        });
+      } else {
+        setUploadError('Only CSV and PDF files are supported.');
+      }
+    }
+
+    if (allTransactions.length > 0) {
+      categorizeSpending(allTransactions);
+      setStreak((prev) => prev + 1);
     }
   };
 
@@ -135,9 +156,8 @@ export default function Dashboard() {
         </p>
 
         <div className="mb-6">
-          <label className="block mb-2 font-medium">📎 Upload Bank Statement (PDF or CSV)</label>
-          <input type="file" accept=".pdf,.csv" onChange={handleFileUpload} className="border rounded px-3 py-2 w-full" />
-          {file && <p className="mt-2 text-sm text-gray-600">Uploaded: {file.name}</p>}
+          <label className="block mb-2 font-medium">📎 Upload Bank Statement(s) (PDF or CSV, up to 3)</label>
+          <input type="file" accept=".pdf,.csv" onChange={handleFileUpload} multiple className="border rounded px-3 py-2 w-full" />
           {uploadError && <p className="text-red-600 text-sm mt-2">{uploadError}</p>}
         </div>
 
