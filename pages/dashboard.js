@@ -12,7 +12,6 @@ import {
 } from 'chart.js';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// Dashboard Component
 export default function Dashboard() {
   const [income, setIncome] = useState(0);
   const [goalAmount, setGoalAmount] = useState(0);
@@ -22,24 +21,35 @@ export default function Dashboard() {
   const [aiTips, setAiTips] = useState([]);
   const [uploadError, setUploadError] = useState(null);
   const [streak, setStreak] = useState(0);
+  const [savingsMode, setSavingsMode] = useState('medium');
+  const [openBankingSync, setOpenBankingSync] = useState(false);
 
   const calculateMonthlySavings = () => {
     if (!income || !goalAmount || !deadline) return 0;
     const endDate = new Date(deadline);
     const today = new Date();
     const months = (endDate.getFullYear() - today.getFullYear()) * 12 + (endDate.getMonth() - today.getMonth());
-    return months > 0 ? Math.ceil(goalAmount / months) : goalAmount;
+    let base = months > 0 ? Math.ceil(goalAmount / months) : goalAmount;
+    if (savingsMode === 'low') return Math.ceil(base * 0.8);
+    if (savingsMode === 'high') return Math.ceil(base * 1.2);
+    return base;
   };
 
   const categorizeSpending = (transactions) => {
     const categories = {};
     const tips = [];
     const subscriptions = {};
+    let totalLoan = 0;
+    let estimatedAPR = 0.15;
 
     transactions.forEach(({ Description = 'Other', Amount = 0 }) => {
       let category = 'Other';
       const desc = Description.toLowerCase();
       const value = Math.abs(parseFloat(Amount));
+
+      if (desc.includes('loan') || desc.includes('credit') || desc.includes('repayment')) {
+        totalLoan += value;
+      }
 
       if (desc.includes('tesco') || desc.includes('asda')) category = 'Groceries';
       else if (desc.includes('uber') || desc.includes('train')) category = 'Transport';
@@ -64,6 +74,16 @@ export default function Dashboard() {
     for (let [sub, val] of Object.entries(subscriptions)) {
       tips.push(`⚠️ Recurring subscription detected: ${sub} (£${val.toFixed(2)})`);
     }
+
+    if (totalLoan > 0) {
+      const interest = totalLoan * estimatedAPR;
+      const totalPayable = totalLoan + interest;
+      tips.push(`💸 Total debt detected: £${totalLoan.toFixed(2)} | Estimated total repayment (APR ${estimatedAPR * 100}%): £${totalPayable.toFixed(2)}`);
+      tips.push(`📈 Consider aggressive repayment to reduce total interest.`);
+    }
+
+    tips.push(`📊 Investment Tip: With £${income}, consider splitting 10% into low-risk index funds for long-term growth.`);
+    tips.push(`🏛️ Check if you're eligible for local government debt relief or hardship grants.`);
 
     setCategorized(categories);
     setAiTips(tips);
@@ -137,6 +157,15 @@ export default function Dashboard() {
       <main className="max-w-4xl mx-auto p-6">
         <h1 className="text-3xl font-bold text-green-700 mb-6">Dashboard</h1>
 
+        <div className="mb-4">
+          <label className="block font-semibold">Savings Mode:</label>
+          <select value={savingsMode} onChange={(e) => setSavingsMode(e.target.value)} className="border rounded p-2 mt-1">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Income (£)</label>
@@ -162,6 +191,8 @@ export default function Dashboard() {
           {uploadError && <p className="text-red-600 text-sm mt-2">{uploadError}</p>}
         </div>
 
+        <button className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded mb-6">Apply</button>
+
         <div className="bg-white p-6 shadow rounded text-center">
           <h2 className="text-xl font-bold text-gray-800 mb-2">Spending Overview</h2>
           {Object.keys(categorized).length ? <Doughnut data={doughnutData} /> : <p className="text-gray-500">Upload a statement to view your insights.</p>}
@@ -178,8 +209,9 @@ export default function Dashboard() {
 
         <div className="text-sm text-gray-600 mt-6">📅 Goal Streak: {streak} day(s)</div>
 
-        <div className="mt-6 text-center">
-          <button className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">Apply</button>
+        <div className="mt-8 p-4 border rounded bg-blue-50">
+          <h4 className="font-semibold text-blue-700">🔗 Open Banking Sync</h4>
+          <p className="text-sm">(Coming soon) Toggle will allow real-time data updates.</p>
         </div>
       </main>
     </div>
