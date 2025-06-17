@@ -27,6 +27,7 @@ export default function Dashboard() {
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files).slice(0, 3);
     const uploads = [];
+
     for (const file of files) {
       if (file.type === "text/csv" || file.name.endsWith(".csv")) {
         const content = await file.text();
@@ -36,6 +37,7 @@ export default function Dashboard() {
         uploads.push({ name: file.name, content });
       }
     }
+
     setParsedFiles(uploads);
     setFileName(files.map((f) => f.name).join(", "));
     setUploadError(null);
@@ -62,9 +64,10 @@ export default function Dashboard() {
 
   const handleApply = () => {
     if (parsedFiles.length === 0) {
-      setUploadError("Please upload at least one bank statement.");
+      setUploadError("Please wait until files are fully loaded.");
       return;
     }
+
     let allTransactions = [];
     parsedFiles.forEach(({ content }) => {
       const lines = content.split("\n").filter((line) => line.trim());
@@ -74,9 +77,10 @@ export default function Dashboard() {
       }));
       allTransactions = allTransactions.concat(transactions);
     });
+
     categorizeSpending(allTransactions);
     updateSuggestions(allTransactions);
-    setStreak(streak + 1);
+    setStreak((s) => s + 1);
   };
 
   const categorizeSpending = (transactions) => {
@@ -85,11 +89,13 @@ export default function Dashboard() {
       let category = "Other";
       const desc = Description.toLowerCase();
       const value = Math.abs(parseFloat(Amount));
+
       if (desc.includes("tesco") || desc.includes("asda")) category = "Groceries";
       else if (desc.includes("uber") || desc.includes("train")) category = "Transport";
       else if (desc.includes("netflix") || desc.includes("spotify")) category = "Entertainment";
       else if (desc.includes("rent") || desc.includes("mortgage")) category = "Housing";
       else if (desc.includes("gym") || desc.includes("fitness")) category = "Health";
+
       categories[category] = (categories[category] || 0) + value;
     });
     setCategorized(categories);
@@ -98,6 +104,7 @@ export default function Dashboard() {
   const updateSuggestions = (transactions) => {
     let totalRecurring = 0;
     const tips = [];
+
     transactions.forEach(({ Description = "", Amount = 0 }) => {
       const desc = Description.toLowerCase();
       if (
@@ -109,6 +116,7 @@ export default function Dashboard() {
         tips.push(`Recurring payment found: ${Description} (£${Amount})`);
       }
     });
+
     const multiplier =
       savingsMode === "low" ? 0.25 : savingsMode === "medium" ? 0.5 : 0.75;
     const suggestedSavings = (totalRecurring * multiplier).toFixed(2);
@@ -174,7 +182,13 @@ export default function Dashboard() {
           {fileName && <p className="text-sm mt-1">Uploaded: {fileName}</p>}
         </div>
 
-        <button onClick={handleApply} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition mb-6">
+        <button
+          onClick={handleApply}
+          disabled={parsedFiles.length === 0}
+          className={`px-4 py-2 rounded transition mb-6 ${
+            parsedFiles.length === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700"
+          }`}
+        >
           Apply
         </button>
 
