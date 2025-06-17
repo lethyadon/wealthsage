@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
+// Dashboard Component
 export default function Dashboard() {
   const [income, setIncome] = useState(0);
   const [goalAmount, setGoalAmount] = useState(0);
@@ -176,6 +177,10 @@ export default function Dashboard() {
         )}
 
         <div className="text-sm text-gray-600 mt-6">📅 Goal Streak: {streak} day(s)</div>
+
+        <div className="mt-6 text-center">
+          <button className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">Apply</button>
+        </div>
       </main>
     </div>
   );
