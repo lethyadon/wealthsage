@@ -25,7 +25,7 @@ export default function Dashboard() {
   const [error, setError] = useState("");
 
   const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
+    setFiles(Array.from(e.target.files).slice(0, 3)); // Limit to 3 files
   };
 
   const handleApply = () => {
