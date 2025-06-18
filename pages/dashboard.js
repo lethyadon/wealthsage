@@ -153,24 +153,13 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
       <main className="max-w-4xl mx-auto p-6">
-        <Image
-          src="/wealthsagelogo.png"
-          alt="WealthSage Logo"
-          width={200}
-          height={60}
-          className="mb-4"
-        />
-
+        <Image src="/wealthsagelogo.png" alt="WealthSage Logo" width={200} height={60} className="mb-4" />
         <h1 className="text-3xl font-bold text-green-700 mb-4">Dashboard</h1>
 
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
             <label>Savings Mode:</label>
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value)}
-              className="border p-2 w-full rounded"
-            >
+            <select value={mode} onChange={(e) => setMode(e.target.value)} className="border p-2 w-full rounded">
               <option>Low</option>
               <option>Medium</option>
               <option>High</option>
