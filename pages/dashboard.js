@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import Image from "next/image";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -152,6 +153,14 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
       <main className="max-w-4xl mx-auto p-6">
+        <Image
+          src="/wealthsagelogo.png"
+          alt="WealthSage Logo"
+          width={200}
+          height={60}
+          className="mb-4"
+        />
+
         <h1 className="text-3xl font-bold text-green-700 mb-4">Dashboard</h1>
 
         <div className="grid md:grid-cols-2 gap-4 mb-4">
