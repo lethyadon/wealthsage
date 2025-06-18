@@ -3,7 +3,9 @@ import NavBar from "../components/NavBar";
 import { useState } from "react";
 import Papa from "papaparse";
 import { Doughnut } from "react-chartjs-2";
-import { pdfjs } from "react-pdf";
+import * as pdfjsLib from "pdfjs-dist";
+import worker from "pdfjs-dist/build/pdf.worker.entry";
+pdfjsLib.GlobalWorkerOptions.workerSrc = worker;
 import {
   Chart as ChartJS,
   ArcElement,
