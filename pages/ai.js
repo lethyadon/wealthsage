@@ -140,4 +140,7 @@ Premium members get automated categorization.`;
           </button>
         </div>
         <p className="text-xs text-gray-500 mt-4">
-          Want more features?{" 
+        <p className="text-xs text-gray-500 mt-4">
+  Want more features?{" "}
+  <Link href="/upgrade" className="text-blue-600 underline">Upgrade to Premium</Link> to unlock smart job matching, debt analyzers, cancellation letters, and more.
+</p>
