@@ -1,22 +1,31 @@
 {
   "name": "wealthsage",
   "version": "1.0.0",
-  "description": "WealthSage – AI-powered debt, savings & job dashboard",
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start"
   },
   "dependencies": {
-    "chart.js": "^4.4.0",
+    "@emailjs/browser": "^3.11.0",
+    "axios": "^1.6.8",
+    "chart.js": "^4.4.2",
+    "firebase": "^9.22.2",
+    "framer-motion": "^10.16.1",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.5.29",
+    "lucide-react": "^0.268.0",
     "next": "13.4.19",
     "papaparse": "^5.4.1",
     "react": "18.2.0",
-    "react-chartjs-2": "^5.3.1",
+    "react-chartjs-2": "^5.2.0",
     "react-dom": "18.2.0",
     "react-pdf": "^7.0.0"
   },
-  "devDependencies": {},
-  "author": "Sean Keenan",
-  "license": "MIT"
+  "devDependencies": {
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.24",
+    "tailwindcss": "^3.4.1"
+  }
 }
