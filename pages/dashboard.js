@@ -4,6 +4,7 @@ import { useState } from "react";
 import Papa from "papaparse";
 import { Doughnut } from "react-chartjs-2";
 import { pdfjs } from "react-pdf";
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 import {
   Chart as ChartJS,
   ArcElement,
