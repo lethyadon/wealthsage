@@ -59,10 +59,17 @@ export default function Dashboard() {
             text += strings + "\n";
           }
           const lines = text.split("\n").filter((line) => line.trim());
-          const transactions = lines.map((line) => ({
-            Description: line,
-            Amount: line.match(/-?\d+(\.\d{2})?/)?.[0] || "0",
-          }));
+         const transactions = lines
+  .filter(line => line.match(/\d{2}\/\d{2}\/\d{2}/)) // Filter for lines with dates
+  .map(line => {
+    const amountMatch = line.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/g);
+    const amount = amountMatch ? amountMatch[amountMatch.length - 1].replace(/,/g, "") : "0";
+    return {
+      Description: line,
+      Amount: amount
+    };
+  });
+
           allData.push(...transactions);
           if (++processedCount === files.length) processTransactions(allData);
         };
