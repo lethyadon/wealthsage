@@ -84,6 +84,47 @@ export default function Dashboard() {
     } else {
       if (++processedCount === files.length) processTransactions(allData);
     }
+  });
+};
+
+    } else if (file.type === "application/pdf") {
+      const reader = new FileReader();
+      reader.onload = async function () {
+        try {
+          const typedarray = new Uint8Array(reader.result);
+          const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
+          let text = "";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const strings = content.items.map((item) => item.str).join(" ");
+            text += strings + "\n";
+          }
+
+          const lines = text.split("\n").filter(line => line.trim());
+
+          const transactions = lines
+            .filter(line => /\d{2}\/\d{2}\/\d{2}/.test(line)) // look for date patterns
+            .map(line => {
+              const amountMatch = line.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/g);
+              const amount = amountMatch ? amountMatch.pop().replace(/,/g, "") : "0";
+              return {
+                Description: line,
+                Amount: amount
+              };
+            });
+
+          allData.push(...transactions);
+          if (++processedCount === files.length) processTransactions(allData);
+        } catch (err) {
+          console.error("PDF parsing error:", err);
+          setError("Something went wrong parsing the PDF.");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      if (++processedCount === files.length) processTransactions(allData);
+    }
           },
         });
       } else if (file.type === "application/pdf") {
