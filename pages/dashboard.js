@@ -62,9 +62,8 @@ export default function Dashboard() {
           }
 
           const lines = text.split("\n").filter(line => line.trim());
-
           const transactions = lines
-            .filter(line => /\d{2}\/\d{2}\/\d{2}/.test(line)) // look for date patterns
+            .filter(line => /\d{2}\/\d{2}\/\d{2}/.test(line))
             .map(line => {
               const amountMatch = line.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/g);
               const amount = amountMatch ? amountMatch.pop().replace(/,/g, "") : "0";
@@ -79,6 +78,7 @@ export default function Dashboard() {
         } catch (err) {
           console.error("PDF parsing error:", err);
           setError("Something went wrong parsing the PDF.");
+          if (++processedCount === files.length) processTransactions(allData);
         }
       };
       reader.readAsArrayBuffer(file);
@@ -87,7 +87,6 @@ export default function Dashboard() {
     }
   });
 };
-
     } else if (file.type === "application/pdf") {
       const reader = new FileReader();
       reader.onload = async function () {
