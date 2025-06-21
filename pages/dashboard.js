@@ -186,6 +186,91 @@ export default function Dashboard() {
             Apply
           </button>
         </div>
+<div className="bg-white p-4 rounded shadow mb-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label className="block font-semibold mb-1">Savings Mode:</label>
+      <select
+        value={mode}
+        onChange={(e) => setMode(e.target.value)}
+        className="w-full border rounded p-2"
+      >
+        <option>Low</option>
+        <option>Medium</option>
+        <option>High</option>
+      </select>
+    </div>
+    <div>
+      <label className="block font-semibold mb-1">Income (£):</label>
+      <input
+        type="number"
+        value={income}
+        onChange={(e) => setIncome(Number(e.target.value))}
+        className="w-full border rounded p-2"
+      />
+    </div>
+    <div>
+      <label className="block font-semibold mb-1">Income Frequency:</label>
+      <select
+        value={incomeFrequency}
+        onChange={(e) => setIncomeFrequency(e.target.value)}
+        className="w-full border rounded p-2"
+      >
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option>
+      </select>
+    </div>
+    <div className="flex items-center mt-6">
+      <label className="flex items-center space-x-2 text-sm">
+        <input
+          type="checkbox"
+          checked={showSuggestions}
+          onChange={(e) => setShowSuggestions(e.target.checked)}
+        />
+        <span>Auto-suggest subscription cancellations</span>
+      </label>
+    </div>
+    <div>
+      <label className="block font-semibold mb-1">Goal Amount (£):</label>
+      <input
+        type="number"
+        value={goalAmount}
+        onChange={(e) => setGoalAmount(Number(e.target.value))}
+        className="w-full border rounded p-2"
+      />
+    </div>
+    <div>
+      <label className="block font-semibold mb-1">Deadline:</label>
+      <input
+        type="date"
+        value={deadline}
+        onChange={(e) => setDeadline(e.target.value)}
+        className="w-full border rounded p-2"
+      />
+    </div>
+  </div>
+  <div className="mt-4">
+    <label className="block font-semibold mb-1">
+      Upload Bank Statement(s) (CSV or PDF, up to 3)
+    </label>
+    <input
+      type="file"
+      accept=".csv,.pdf"
+      multiple
+      onChange={(e) => setFiles([...e.target.files])}
+      className="w-full border rounded p-2"
+    />
+  </div>
+  <button
+    onClick={() => {
+      // Trigger processing here (example: you could call processTransactions with uploaded data)
+    }}
+    className="mt-4 bg-green-600 text-white px-4 py-2 rounded"
+  >
+    Apply
+  </button>
+</div>
 
         <div className="bg-white rounded-lg p-6 shadow-md mb-6">
           <h2 className="text-2xl font-bold mb-4">📊 Spending Overview</h2>
