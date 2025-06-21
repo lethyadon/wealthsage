@@ -13,6 +13,7 @@ import {
 import Image from "next/image";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export default function Dashboard() {
   const [income, setIncome] = useState(0);
@@ -80,10 +81,14 @@ export default function Dashboard() {
 
   const processTransactions = (data) => {
     const cats = {};
+    const descCounts = {};
+
     data.forEach(({ Description = "", Amount = 0 }) => {
       let category = "Other";
       const desc = Description.toLowerCase();
       const val = Math.abs(parseFloat(Amount));
+
+      descCounts[desc] = (descCounts[desc] || 0) + 1;
 
       if (desc.includes("tesco") || desc.includes("asda")) category = "Groceries";
       else if (desc.includes("uber") || desc.includes("train")) category = "Transport";
@@ -93,12 +98,13 @@ export default function Dashboard() {
 
       cats[category] = (cats[category] || 0) + val;
     });
+
     setCategorized(cats);
-    generateAITips(cats);
+    generateAITips(cats, descCounts);
     setStreak((prev) => prev + 1);
   };
 
-  const generateAITips = (cats) => {
+  const generateAITips = (cats, descCounts) => {
     let totalUnnecessary = 0;
     let breakdown = [];
 
@@ -118,6 +124,14 @@ export default function Dashboard() {
       const cut = amount * cutPercent;
       tips += `• ${category}: Save £${cut.toFixed(2)} from £${amount.toFixed(2)}\n`;
     });
+
+    const recurring = Object.entries(descCounts)
+      .filter(([desc, count]) => count >= 2)
+      .map(([desc]) => `• ${desc}`);
+
+    if (recurring.length) {
+      tips += `\n🔁 Possible subscriptions or repeat charges detected:\n${recurring.join("\n")}`;
+    }
 
     if (goalAmount && deadline) {
       const months = getMonthsUntil(deadline);
@@ -158,24 +172,13 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
       <main className="max-w-4xl mx-auto p-6">
-        <Image
-          src="/wealthsagelogo.png"
-          alt="WealthSage Logo"
-          width={200}
-          height={60}
-          className="mb-4"
-        />
-
+        <Image src="/wealthsagelogo.png" alt="WealthSage Logo" width={200} height={60} className="mb-4" />
         <h1 className="text-3xl font-bold text-green-700 mb-4">Dashboard</h1>
 
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
             <label>Savings Mode:</label>
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value)}
-              className="border p-2 w-full rounded"
-            >
+            <select value={mode} onChange={(e) => setMode(e.target.value)} className="border p-2 w-full rounded">
               <option>Low</option>
               <option>Medium</option>
               <option>High</option>
