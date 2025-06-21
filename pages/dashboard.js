@@ -11,6 +11,7 @@ import {
   Legend,
 } from "chart.js";
 import Image from "next/image";
+import { saveAs } from "file-saver";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -27,9 +28,36 @@ export default function Dashboard() {
   const [mode, setMode] = useState("Low");
   const [error, setError] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [budgets, setBudgets] = useState({});
+
+  const icons = {
+    netflix: "🎬",
+    spotify: "🎧",
+    prime: "📦",
+    disney: "🧚",
+    tinder: "🔥",
+    uber: "🚗",
+    train: "🚆",
+    tfl: "🚇",
+    tesco: "🛒",
+    asda: "🛍️",
+    rent: "🏠",
+    mortgage: "🏦",
+    gym: "💪",
+    fitness: "🏋️",
+  };
 
   const handleFileChange = (e) => {
     setFiles(Array.from(e.target.files));
+  };
+
+  const handleExportTips = () => {
+    const blob = new Blob([aiTip], { type: "text/plain;charset=utf-8" });
+    saveAs(blob, "WealthSage_Savings_Report.txt");
+  };
+
+  const generateCancelEmail = (service) => {
+    return `To whom it may concern,\n\nI would like to cancel my subscription to ${service}. Please confirm the cancellation and stop any future billing.\n\nKind regards,\n[Your Name]`;
   };
 
   const handleApply = () => {
@@ -52,27 +80,30 @@ export default function Dashboard() {
       } else if (file.type === "application/pdf") {
         const reader = new FileReader();
         reader.onload = async function () {
-          try {
-            const typedarray = new Uint8Array(reader.result);
-            const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
-            let text = "";
-            for (let i = 1; i <= pdf.numPages; i++) {
-              const page = await pdf.getPage(i);
-              const content = await page.getTextContent();
-              const strings = content.items.map((item) => item.str).join(" ");
-              text += strings + "\n";
-            }
-            const lines = text.split("\n").filter((line) => line.trim());
-            const transactions = lines.map((line) => ({
-              Description: line,
-              Amount: line.match(/-?\d+(\.\d{2})?/)?.[0] || "0",
-            }));
-            allData.push(...transactions);
-            if (++processedCount === files.length) processTransactions(allData);
-          } catch (err) {
-            console.error("PDF parsing failed:", err);
-            if (++processedCount === files.length) processTransactions(allData);
+          const typedarray = new Uint8Array(reader.result);
+          const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
+          let text = "";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const strings = content.items.map((item) => item.str).join(" ");
+            text += strings + "\n";
           }
+
+          const lines = text.split("\n").filter(line => line.trim());
+          const transactions = lines
+            .filter(line => /\d{2}\/\d{2}\/\d{2}/.test(line))
+            .map(line => {
+              const amountMatch = line.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/g);
+              const amount = amountMatch ? amountMatch.pop().replace(/,/g, "") : "0";
+              return {
+                Description: line,
+                Amount: amount
+              };
+            });
+
+          allData.push(...transactions);
+          if (++processedCount === files.length) processTransactions(allData);
         };
         reader.readAsArrayBuffer(file);
       } else {
@@ -84,36 +115,34 @@ export default function Dashboard() {
   const processTransactions = (data) => {
     const cats = {};
     const subs = {};
-    const descCounts = {};
-    const subTotals = {};
-    let totalSpent = 0;
 
     data.forEach(({ Description = "", Amount = 0 }) => {
       let category = "Other";
       const desc = Description.toLowerCase();
       const val = Math.abs(parseFloat(Amount));
-      totalSpent += val;
-      descCounts[desc] = (descCounts[desc] || 0) + 1;
 
       if (desc.includes("tesco") || desc.includes("asda")) category = "Groceries";
       else if (desc.includes("uber") || desc.includes("train") || desc.includes("tfl")) category = "Transport";
-      else if (desc.includes("netflix") || desc.includes("spotify") || desc.includes("prime") || desc.includes("disney") || desc.includes("tinder")) category = "Entertainment";
+      else if (desc.includes("netflix") || desc.includes("spotify") || desc.includes("tinder") || desc.includes("disney") || desc.includes("prime")) category = "Entertainment";
       else if (desc.includes("rent") || desc.includes("mortgage")) category = "Housing";
       else if (desc.includes("gym") || desc.includes("fitness")) category = "Health";
 
       cats[category] = (cats[category] || 0) + val;
-      subs[category] = subs[category] || [];
-      if (!subs[category].includes(desc)) subs[category].push(desc);
-      subTotals[desc] = (subTotals[desc] || 0) + val;
+
+      for (let key in icons) {
+        if (desc.includes(key)) {
+          subs[key] = (subs[key] || 0) + val;
+        }
+      }
     });
 
     setCategorized(cats);
     setSubcategories(subs);
-    generateAITips(cats, descCounts, totalSpent, subs, subTotals);
+    generateAITips(cats, subs);
     setStreak((prev) => prev + 1);
   };
 
-  const generateAITips = (cats, descCounts, totalSpent, subs, subTotals) => {
+  const generateAITips = (cats, subs) => {
     let totalUnnecessary = 0;
     let breakdown = [];
 
@@ -128,38 +157,35 @@ export default function Dashboard() {
     const cutPercent = modeMap[mode];
     const savings = totalUnnecessary * cutPercent;
 
-    let tips = `🧠 Estimated monthly savings in ${mode} mode: £${savings.toFixed(2)}\n`;
+    let tips = `🧠 Estimated monthly savings in ${mode} mode: £${savings.toFixed(2)}\n\n`;
+    tips += "💸 Suggested Cutbacks:\n";
     breakdown.forEach(({ category, amount }) => {
       const cut = amount * cutPercent;
-      tips += `• ${category}: Save £${cut.toFixed(2)} from £${amount.toFixed(2)}\n`;
+      tips += `• ${category}: Save £${cut.toFixed(2)} of £${amount.toFixed(2)}\n`;
     });
 
-    if (showSuggestions) {
-      const recurring = Object.entries(descCounts)
-        .filter(([desc, count]) => count >= 2)
-        .map(([desc]) => desc);
+    const topWaste = Object.entries(subs)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
 
-      if (recurring.length) {
-        tips += `\n🔁 Possible subscriptions or repeat charges detected:\n`;
-        tips += recurring.map(desc => `• ${desc} (£${subTotals[desc]?.toFixed(2) || "0.00"})`).join("\n");
-
-        const top3 = recurring
-          .sort((a, b) => subTotals[b] - subTotals[a])
-          .slice(0, 3);
-
-        tips += `\n\n💡 Suggestions: Consider cancelling ${top3.join(", ")} to save more.`;
-      }
+    if (topWaste.length) {
+      tips += `\n🔍 Top Recurring Charges:\n`;
+      topWaste.forEach(([name, amt]) => {
+        const icon = icons[name] || "🔁";
+        tips += `${icon} ${name.charAt(0).toUpperCase() + name.slice(1)}: £${amt.toFixed(2)}\n`;
+        if (showSuggestions) {
+          tips += `✉️ Consider cancelling — ${generateCancelEmail(name).split("\n")[0]}...\n`;
+        }
+      });
     }
-
-    tips += `\n\n💸 Total spent from your uploaded statements: £${totalSpent.toFixed(2)}\n`;
 
     if (goalAmount && deadline) {
       const months = getMonthsUntil(deadline);
       const goalMonthly = goalAmount / months;
-      tips += `\n🎯 Required monthly savings for your goal: £${goalMonthly.toFixed(2)}\n`;
+      tips += `\n🎯 Monthly Needed: £${goalMonthly.toFixed(2)}\n`;
       tips += savings >= goalMonthly
-        ? `✅ You can reach your savings goal with ${mode} mode.`
-        : `⚠️ Consider increasing savings or extending your deadline.`;
+        ? `✅ This mode can help you reach your goal.`
+        : `⚠️ Not enough savings. Increase effort or change deadline.`;
     }
 
     setAiTip(tips);
@@ -169,13 +195,6 @@ export default function Dashboard() {
     const end = new Date(endDateStr);
     const now = new Date();
     return (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
-  };
-
-  const calculateTarget = () => {
-    if (!deadline) return 0;
-    const months = getMonthsUntil(deadline);
-    if (!goalAmount || months <= 0) return 0;
-    return (goalAmount / months).toFixed(2);
   };
 
   const chartData = {
@@ -210,13 +229,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="mb-4">
-          <label className="inline-flex items-center">
-            <input type="checkbox" checked={showSuggestions} onChange={(e) => setShowSuggestions(e.target.checked)} className="mr-2" />
-            Auto-suggest subscription cancellations
-          </label>
-        </div>
-
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
             <label>Goal Amount (£):</label>
@@ -228,12 +240,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <p className="mb-4 text-green-700">
-          You need to save: <strong>£{calculateTarget()}</strong> per month
-        </p>
-
         <div className="mb-4">
-          <label className="font-medium">Upload Bank Statement(s) (CSV or PDF, up to 3)</label>
+          <label className="font-medium">Upload Bank Statement(s) (CSV or PDF)</label>
           <input type="file" accept=".csv,.pdf" multiple onChange={handleFileChange} className="block mt-2" />
           {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
         </div>
@@ -244,24 +252,7 @@ export default function Dashboard() {
 
         <div className="bg-white p-4 rounded shadow mb-4">
           <h2 className="font-semibold text-lg mb-2">Spending Overview</h2>
-          {Object.keys(categorized).length ? (
-            <>
-              <Doughnut data={chartData} />
-              <div className="mt-4">
-                {Object.entries(subcategories).map(([cat, list]) => (
-                  <div key={cat} className="mb-2">
-                    <strong>{cat}</strong>: {list.map((s, i) => (
-                      <span key={i} className="inline-block bg-gray-200 text-xs text-black rounded px-2 py-1 mr-2">
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-gray-600">Upload a statement to view your insights.</p>
-          )}
+          {Object.keys(categorized).length ? <Doughnut data={chartData} /> : <p className="text-sm text-gray-600">Upload a statement to view your insights.</p>}
         </div>
 
         {aiTip && (
@@ -271,17 +262,20 @@ export default function Dashboard() {
           </div>
         )}
 
-        <button
-          onClick={() => window.print()}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-4"
-        >
-          Export / Print Report
-        </button>
+        <div className="flex justify-between items-center mt-4 gap-2">
+          <button
+            onClick={handleExportTips}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            📊 Export Tips Report
+          </button>
 
-        <p className="text-sm text-gray-500">🔥 Goal Streak: {streak} day(s)</p>
-
-        <div className="mt-4 text-sm text-blue-800 bg-blue-50 p-3 rounded border">
-          🔒 <strong>Open Banking Sync</strong> (Coming soon) Toggle will allow real-time data updates.
+          <button
+            onClick={() => alert(generateCancelEmail("Netflix"))}
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            📧 Generate Cancel Email
+          </button>
         </div>
       </main>
     </div>
