@@ -82,17 +82,19 @@ export default function Dashboard() {
   const processTransactions = (data) => {
     const cats = {};
     const descCounts = {};
+    let totalSpent = 0;
 
     data.forEach(({ Description = "", Amount = 0 }) => {
       let category = "Other";
       const desc = Description.toLowerCase();
       const val = Math.abs(parseFloat(Amount));
 
+      totalSpent += val;
       descCounts[desc] = (descCounts[desc] || 0) + 1;
 
       if (desc.includes("tesco") || desc.includes("asda")) category = "Groceries";
-      else if (desc.includes("uber") || desc.includes("train")) category = "Transport";
-      else if (desc.includes("netflix") || desc.includes("spotify")) category = "Entertainment";
+      else if (desc.includes("uber") || desc.includes("train") || desc.includes("tfl")) category = "Transport";
+      else if (desc.includes("netflix") || desc.includes("spotify") || desc.includes("prime") || desc.includes("disney")) category = "Entertainment";
       else if (desc.includes("rent") || desc.includes("mortgage")) category = "Housing";
       else if (desc.includes("gym") || desc.includes("fitness")) category = "Health";
 
@@ -100,11 +102,11 @@ export default function Dashboard() {
     });
 
     setCategorized(cats);
-    generateAITips(cats, descCounts);
+    generateAITips(cats, descCounts, totalSpent);
     setStreak((prev) => prev + 1);
   };
 
-  const generateAITips = (cats, descCounts) => {
+  const generateAITips = (cats, descCounts, totalSpent) => {
     let totalUnnecessary = 0;
     let breakdown = [];
 
@@ -132,6 +134,8 @@ export default function Dashboard() {
     if (recurring.length) {
       tips += `\n🔁 Possible subscriptions or repeat charges detected:\n${recurring.join("\n")}`;
     }
+
+    tips += `\n💸 Total spent from your uploaded statements: £${totalSpent.toFixed(2)}\n`;
 
     if (goalAmount && deadline) {
       const months = getMonthsUntil(deadline);
