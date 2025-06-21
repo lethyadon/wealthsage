@@ -11,7 +11,6 @@ import {
   Legend,
 } from "chart.js";
 import Image from "next/image";
-import dynamic from "next/dynamic";
 
 let saveAs;
 if (typeof window !== "undefined") {
@@ -32,70 +31,19 @@ export default function Dashboard() {
   const [categorized, setCategorized] = useState({});
   const [subcategories, setSubcategories] = useState({});
   const [aiTip, setAiTip] = useState("");
-  const [streak, setStreak] = useState(0);
   const [mode, setMode] = useState("Low");
-  const [error, setError] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(true);
 
-  const handleFileChange = (e) => {
-    setFiles(Array.from(e.target.files));
-  };
-
-  const handleApply = () => {
-    if (!files.length) return setError("Please upload at least one bank statement.");
-    setError("");
-
-    let allData = [];
-    let processedCount = 0;
-
-    files.forEach((file) => {
+  const handleApply = async () => {
+    const allData = [];
+    for (let file of files) {
       if (file.type === "text/csv") {
-        Papa.parse(file, {
-          header: true,
-          skipEmptyLines: true,
-          complete: ({ data }) => {
-            allData.push(...data);
-            if (++processedCount === files.length) processTransactions(allData);
-          },
-        });
-      } else if (file.type === "application/pdf") {
-        const reader = new FileReader();
-        reader.onload = async function () {
-          try {
-            const typedarray = new Uint8Array(reader.result);
-            const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
-            let text = "";
-            for (let i = 1; i <= pdf.numPages; i++) {
-              const page = await pdf.getPage(i);
-              const content = await page.getTextContent();
-              const strings = content.items.map((item) => item.str).join(" ");
-              text += strings + "\n";
-            }
-
-            const lines = text.split("\n").filter(line => line.trim());
-
-            const transactions = lines
-              .filter(line => /\d{2}\/\d{2}\/\d{2}/.test(line))
-              .map(line => {
-                const amountMatch = line.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/g);
-                const amount = amountMatch ? amountMatch.pop().replace(/,/g, "") : "0";
-                return {
-                  Description: line,
-                  Amount: amount
-                };
-              });
-
-            allData.push(...transactions);
-            if (++processedCount === files.length) processTransactions(allData);
-          } catch (err) {
-            console.error("PDF parsing error:", err);
-            setError("Something went wrong parsing the PDF.");
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      } else {
-        if (++processedCount === files.length) processTransactions(allData);
+        const text = await file.text();
+        const parsed = Papa.parse(text, { header: true });
+        allData.push(...parsed.data);
       }
-    });
+    }
+    processTransactions(allData);
   };
 
   const processTransactions = (data) => {
@@ -149,7 +97,6 @@ export default function Dashboard() {
     setCategorized(cats);
     setSubcategories(subs);
 
-    // AI Tip Generation
     const tips = [];
     for (const [cat, items] of Object.entries(subs)) {
       items.sort((a, b) => b.amount - a.amount);
@@ -178,8 +125,70 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
       <main className="max-w-4xl mx-auto p-6">
-        <h2 className="text-2xl font-bold mb-4">📊 Spending Overview</h2>
+        <div className="mb-6 bg-white shadow p-4 rounded">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-semibold mb-1">Savings Mode:</label>
+              <select value={mode} onChange={(e) => setMode(e.target.value)} className="w-full border p-2 rounded">
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+              </select>
+              <label className="block mt-4 font-semibold mb-1">Auto-suggest subscription cancellations</label>
+              <input type="checkbox" checked={showSuggestions} onChange={(e) => setShowSuggestions(e.target.checked)} />
+            </div>
+            <div>
+              <label className="block font-semibold mb-1">Income (£):</label>
+              <input
+                type="number"
+                value={income}
+                onChange={(e) => setIncome(Number(e.target.value))}
+                className="w-full border p-2 rounded"
+              />
+              <label className="block font-semibold mt-2">Income Frequency:</label>
+              <select
+                value={incomeFrequency}
+                onChange={(e) => setIncomeFrequency(e.target.value)}
+                className="w-full border p-2 rounded"
+              >
+                <option value="weekly">Per Week</option>
+                <option value="monthly">Per Month</option>
+                <option value="yearly">Per Year</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-semibold mb-1">Goal Amount (£):</label>
+              <input
+                type="number"
+                value={goalAmount}
+                onChange={(e) => setGoalAmount(Number(e.target.value))}
+                className="w-full border p-2 rounded"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold mb-1">Deadline:</label>
+              <input
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                className="w-full border p-2 rounded"
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <label className="font-semibold block mb-1">Upload Bank Statement(s) (CSV or PDF)</label>
+            <input type="file" accept=".csv,.pdf" multiple onChange={(e) => setFiles([...e.target.files])} />
+          </div>
+          <button
+            onClick={handleApply}
+            className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Apply
+          </button>
+        </div>
+
         <div className="bg-white rounded-lg p-6 shadow-md mb-6">
+          <h2 className="text-2xl font-bold mb-4">📊 Spending Overview</h2>
           <Doughnut data={chartData} />
         </div>
 
@@ -207,16 +216,6 @@ export default function Dashboard() {
             <p className="text-sm text-gray-800">{aiTip}</p>
           </div>
         )}
-
-        <div className="my-4">
-          <label className="block font-medium">Upload Bank Statement (CSV or PDF)</label>
-          <input type="file" accept=".csv,.pdf" multiple onChange={handleFileChange} />
-          {error && <p className="text-red-600 text-sm">{error}</p>}
-        </div>
-
-        <button onClick={handleApply} className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded">
-          Apply
-        </button>
       </main>
     </div>
   );
