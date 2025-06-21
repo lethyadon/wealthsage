@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [deadline, setDeadline] = useState("");
   const [files, setFiles] = useState([]);
   const [categorized, setCategorized] = useState({});
+  const [subcategories, setSubcategories] = useState({});
   const [aiTip, setAiTip] = useState("");
   const [streak, setStreak] = useState(0);
   const [mode, setMode] = useState("Low");
@@ -81,6 +82,7 @@ export default function Dashboard() {
 
   const processTransactions = (data) => {
     const cats = {};
+    const subs = {};
     const descCounts = {};
     let totalSpent = 0;
 
@@ -88,25 +90,27 @@ export default function Dashboard() {
       let category = "Other";
       const desc = Description.toLowerCase();
       const val = Math.abs(parseFloat(Amount));
-
       totalSpent += val;
       descCounts[desc] = (descCounts[desc] || 0) + 1;
 
       if (desc.includes("tesco") || desc.includes("asda")) category = "Groceries";
       else if (desc.includes("uber") || desc.includes("train") || desc.includes("tfl")) category = "Transport";
-      else if (desc.includes("netflix") || desc.includes("spotify") || desc.includes("prime") || desc.includes("disney")) category = "Entertainment";
+      else if (desc.includes("netflix") || desc.includes("spotify") || desc.includes("prime") || desc.includes("disney") || desc.includes("tinder")) category = "Entertainment";
       else if (desc.includes("rent") || desc.includes("mortgage")) category = "Housing";
       else if (desc.includes("gym") || desc.includes("fitness")) category = "Health";
 
       cats[category] = (cats[category] || 0) + val;
+      subs[category] = subs[category] || [];
+      if (!subs[category].includes(desc)) subs[category].push(desc);
     });
 
     setCategorized(cats);
-    generateAITips(cats, descCounts, totalSpent);
+    setSubcategories(subs);
+    generateAITips(cats, descCounts, totalSpent, subs);
     setStreak((prev) => prev + 1);
   };
 
-  const generateAITips = (cats, descCounts, totalSpent) => {
+  const generateAITips = (cats, descCounts, totalSpent, subs) => {
     let totalUnnecessary = 0;
     let breakdown = [];
 
@@ -129,13 +133,16 @@ export default function Dashboard() {
 
     const recurring = Object.entries(descCounts)
       .filter(([desc, count]) => count >= 2)
-      .map(([desc]) => `• ${desc}`);
+      .map(([desc]) => desc);
 
     if (recurring.length) {
-      tips += `\n🔁 Possible subscriptions or repeat charges detected:\n${recurring.join("\n")}`;
+      tips += `\n🔁 Possible subscriptions or repeat charges detected:\n`;
+      tips += recurring.map(desc => `• ${desc}`).join("\n");
+
+      tips += `\n💡 Suggestions: Consider cancelling ${recurring.slice(0, 3).join(", ")} to save more.`;
     }
 
-    tips += `\n💸 Total spent from your uploaded statements: £${totalSpent.toFixed(2)}\n`;
+    tips += `\n\n💸 Total spent from your uploaded statements: £${totalSpent.toFixed(2)}\n`;
 
     if (goalAmount && deadline) {
       const months = getMonthsUntil(deadline);
@@ -221,7 +228,24 @@ export default function Dashboard() {
 
         <div className="bg-white p-4 rounded shadow mb-4">
           <h2 className="font-semibold text-lg mb-2">Spending Overview</h2>
-          {Object.keys(categorized).length ? <Doughnut data={chartData} /> : <p className="text-sm text-gray-600">Upload a statement to view your insights.</p>}
+          {Object.keys(categorized).length ? (
+            <>
+              <Doughnut data={chartData} />
+              <div className="mt-4">
+                {Object.entries(subcategories).map(([cat, list]) => (
+                  <div key={cat} className="mb-2">
+                    <strong>{cat}</strong>: {list.map((s, i) => (
+                      <span key={i} className="inline-block bg-gray-200 text-xs text-black rounded px-2 py-1 mr-2">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-gray-600">Upload a statement to view your insights.</p>
+          )}
         </div>
 
         {aiTip && (
