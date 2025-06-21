@@ -1,6 +1,6 @@
 // pages/dashboard.js
 import NavBar from "../components/NavBar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Papa from "papaparse";
 import { Doughnut } from "react-chartjs-2";
 import { pdfjs } from "react-pdf";
@@ -11,13 +11,21 @@ import {
   Legend,
 } from "chart.js";
 import Image from "next/image";
-import { saveAs } from "file-saver";
+import dynamic from "next/dynamic";
+
+let saveAs;
+if (typeof window !== "undefined") {
+  import("file-saver").then((module) => {
+    saveAs = module.saveAs;
+  });
+}
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export default function Dashboard() {
   const [income, setIncome] = useState(0);
+  const [incomeFrequency, setIncomeFrequency] = useState("monthly");
   const [goalAmount, setGoalAmount] = useState(0);
   const [deadline, setDeadline] = useState("");
   const [files, setFiles] = useState([]);
@@ -27,37 +35,9 @@ export default function Dashboard() {
   const [streak, setStreak] = useState(0);
   const [mode, setMode] = useState("Low");
   const [error, setError] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(true);
-  const [budgets, setBudgets] = useState({});
-
-  const icons = {
-    netflix: "🎬",
-    spotify: "🎧",
-    prime: "📦",
-    disney: "🧚",
-    tinder: "🔥",
-    uber: "🚗",
-    train: "🚆",
-    tfl: "🚇",
-    tesco: "🛒",
-    asda: "🛍️",
-    rent: "🏠",
-    mortgage: "🏦",
-    gym: "💪",
-    fitness: "🏋️",
-  };
 
   const handleFileChange = (e) => {
     setFiles(Array.from(e.target.files));
-  };
-
-  const handleExportTips = () => {
-    const blob = new Blob([aiTip], { type: "text/plain;charset=utf-8" });
-    saveAs(blob, "WealthSage_Savings_Report.txt");
-  };
-
-  const generateCancelEmail = (service) => {
-    return `To whom it may concern,\n\nI would like to cancel my subscription to ${service}. Please confirm the cancellation and stop any future billing.\n\nKind regards,\n[Your Name]`;
   };
 
   const handleApply = () => {
@@ -80,30 +60,36 @@ export default function Dashboard() {
       } else if (file.type === "application/pdf") {
         const reader = new FileReader();
         reader.onload = async function () {
-          const typedarray = new Uint8Array(reader.result);
-          const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
-          let text = "";
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            const strings = content.items.map((item) => item.str).join(" ");
-            text += strings + "\n";
+          try {
+            const typedarray = new Uint8Array(reader.result);
+            const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
+            let text = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const content = await page.getTextContent();
+              const strings = content.items.map((item) => item.str).join(" ");
+              text += strings + "\n";
+            }
+
+            const lines = text.split("\n").filter(line => line.trim());
+
+            const transactions = lines
+              .filter(line => /\d{2}\/\d{2}\/\d{2}/.test(line))
+              .map(line => {
+                const amountMatch = line.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/g);
+                const amount = amountMatch ? amountMatch.pop().replace(/,/g, "") : "0";
+                return {
+                  Description: line,
+                  Amount: amount
+                };
+              });
+
+            allData.push(...transactions);
+            if (++processedCount === files.length) processTransactions(allData);
+          } catch (err) {
+            console.error("PDF parsing error:", err);
+            setError("Something went wrong parsing the PDF.");
           }
-
-          const lines = text.split("\n").filter(line => line.trim());
-          const transactions = lines
-            .filter(line => /\d{2}\/\d{2}\/\d{2}/.test(line))
-            .map(line => {
-              const amountMatch = line.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/g);
-              const amount = amountMatch ? amountMatch.pop().replace(/,/g, "") : "0";
-              return {
-                Description: line,
-                Amount: amount
-              };
-            });
-
-          allData.push(...transactions);
-          if (++processedCount === files.length) processTransactions(allData);
         };
         reader.readAsArrayBuffer(file);
       } else {
@@ -115,86 +101,66 @@ export default function Dashboard() {
   const processTransactions = (data) => {
     const cats = {};
     const subs = {};
+    const iconMap = {
+      netflix: "🎬",
+      amazon: "🛒",
+      uber: "🚗",
+      spotify: "🎧",
+      gym: "🏋️",
+      mortgage: "🏠",
+      rent: "🏠",
+    };
 
     data.forEach(({ Description = "", Amount = 0 }) => {
       let category = "Other";
+      let sub = "Other";
       const desc = Description.toLowerCase();
       const val = Math.abs(parseFloat(Amount));
 
       if (desc.includes("tesco") || desc.includes("asda")) category = "Groceries";
-      else if (desc.includes("uber") || desc.includes("train") || desc.includes("tfl")) category = "Transport";
-      else if (desc.includes("netflix") || desc.includes("spotify") || desc.includes("tinder") || desc.includes("disney") || desc.includes("prime")) category = "Entertainment";
+      else if (desc.includes("uber") || desc.includes("train")) category = "Transport";
+      else if (desc.includes("netflix") || desc.includes("spotify")) category = "Entertainment";
       else if (desc.includes("rent") || desc.includes("mortgage")) category = "Housing";
       else if (desc.includes("gym") || desc.includes("fitness")) category = "Health";
 
       cats[category] = (cats[category] || 0) + val;
 
-      for (let key in icons) {
+      for (let key in iconMap) {
         if (desc.includes(key)) {
-          subs[key] = (subs[key] || 0) + val;
+          subs[category] = subs[category] || [];
+          const prev = subs[category].find((i) => i.name === key);
+          if (prev) {
+            prev.amount += val;
+          } else {
+            subs[category].push({ name: key, amount: val, icon: iconMap[key] });
+          }
         }
       }
     });
+
+    for (let key in subs) {
+      const total = cats[key];
+      subs[key] = subs[key].map((item) => ({
+        ...item,
+        percent: ((item.amount / total) * 100).toFixed(1),
+      }));
+    }
 
     setCategorized(cats);
     setSubcategories(subs);
-    generateAITips(cats, subs);
-    setStreak((prev) => prev + 1);
-  };
 
-  const generateAITips = (cats, subs) => {
-    let totalUnnecessary = 0;
-    let breakdown = [];
-
-    for (let [category, amount] of Object.entries(cats)) {
-      if (["Entertainment", "Transport", "Groceries"].includes(category)) {
-        totalUnnecessary += amount;
-        breakdown.push({ category, amount });
-      }
-    }
-
-    const modeMap = { Low: 0.3, Medium: 0.5, High: 0.9 };
-    const cutPercent = modeMap[mode];
-    const savings = totalUnnecessary * cutPercent;
-
-    let tips = `🧠 Estimated monthly savings in ${mode} mode: £${savings.toFixed(2)}\n\n`;
-    tips += "💸 Suggested Cutbacks:\n";
-    breakdown.forEach(({ category, amount }) => {
-      const cut = amount * cutPercent;
-      tips += `• ${category}: Save £${cut.toFixed(2)} of £${amount.toFixed(2)}\n`;
-    });
-
-    const topWaste = Object.entries(subs)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-
-    if (topWaste.length) {
-      tips += `\n🔍 Top Recurring Charges:\n`;
-      topWaste.forEach(([name, amt]) => {
-        const icon = icons[name] || "🔁";
-        tips += `${icon} ${name.charAt(0).toUpperCase() + name.slice(1)}: £${amt.toFixed(2)}\n`;
-        if (showSuggestions) {
-          tips += `✉️ Consider cancelling — ${generateCancelEmail(name).split("\n")[0]}...\n`;
-        }
+    // AI Tip Generation
+    const tips = [];
+    for (const [cat, items] of Object.entries(subs)) {
+      items.sort((a, b) => b.amount - a.amount);
+      const topThree = items.slice(0, 3);
+      topThree.forEach((item) => {
+        tips.push(`${item.icon} ${item.name.charAt(0).toUpperCase() + item.name.slice(1)} – £${item.amount.toFixed(2)} (${item.percent}%)`);
       });
     }
 
-    if (goalAmount && deadline) {
-      const months = getMonthsUntil(deadline);
-      const goalMonthly = goalAmount / months;
-      tips += `\n🎯 Monthly Needed: £${goalMonthly.toFixed(2)}\n`;
-      tips += savings >= goalMonthly
-        ? `✅ This mode can help you reach your goal.`
-        : `⚠️ Not enough savings. Increase effort or change deadline.`;
-    }
-
-    setAiTip(tips);
-  };
-
-  const getMonthsUntil = (endDateStr) => {
-    const end = new Date(endDateStr);
-    const now = new Date();
-    return (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
+    const totalSpend = Object.values(cats).reduce((a, b) => a + b, 0);
+    setAiTip(`🔍 Top Spending Areas This Month:\n${tips.join("\n")}\n\nTotal Spend Analyzed: £${totalSpend.toFixed(2)}\n🧠 Tip: Review subscriptions you no longer use.`);
   };
 
   const chartData = {
@@ -202,7 +168,8 @@ export default function Dashboard() {
     datasets: [
       {
         data: Object.values(categorized),
-        backgroundColor: ["#4CAF50", "#2196F3", "#FFC107", "#FF5722", "#9C27B0"],
+        backgroundColor: ["#4CAF50", "#2196F3", "#FFC107", "#FF5722", "#9C27B0", "#607D8B"],
+        borderWidth: 1,
       },
     ],
   };
@@ -211,72 +178,45 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
       <main className="max-w-4xl mx-auto p-6">
-        <Image src="/wealthsagelogo.png" alt="WealthSage Logo" width={200} height={60} className="mb-4" />
-        <h1 className="text-3xl font-bold text-green-700 mb-4">Dashboard</h1>
-
-        <div className="grid md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label>Savings Mode:</label>
-            <select value={mode} onChange={(e) => setMode(e.target.value)} className="border p-2 w-full rounded">
-              <option>Low</option>
-              <option>Medium</option>
-              <option>High</option>
-            </select>
-          </div>
-          <div>
-            <label>Income (£):</label>
-            <input type="number" value={income} onChange={(e) => setIncome(+e.target.value)} className="border p-2 w-full rounded" />
-          </div>
+        <h2 className="text-2xl font-bold mb-4">📊 Spending Overview</h2>
+        <div className="bg-white rounded-lg p-6 shadow-md mb-6">
+          <Doughnut data={chartData} />
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label>Goal Amount (£):</label>
-            <input type="number" value={goalAmount} onChange={(e) => setGoalAmount(+e.target.value)} className="border p-2 w-full rounded" />
-          </div>
-          <div>
-            <label>Deadline:</label>
-            <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="border p-2 w-full rounded" />
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="font-medium">Upload Bank Statement(s) (CSV or PDF)</label>
-          <input type="file" accept=".csv,.pdf" multiple onChange={handleFileChange} className="block mt-2" />
-          {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
-        </div>
-
-        <button onClick={handleApply} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-6">
-          Apply
-        </button>
-
-        <div className="bg-white p-4 rounded shadow mb-4">
-          <h2 className="font-semibold text-lg mb-2">Spending Overview</h2>
-          {Object.keys(categorized).length ? <Doughnut data={chartData} /> : <p className="text-sm text-gray-600">Upload a statement to view your insights.</p>}
-        </div>
-
-        {aiTip && (
-          <div className="bg-yellow-100 p-4 rounded shadow mb-4 whitespace-pre-line">
-            <h3 className="font-bold mb-2">⚡ AI Tips</h3>
-            <p>{aiTip}</p>
+        {Object.keys(subcategories).length > 0 && (
+          <div className="bg-gray-100 p-4 rounded-lg shadow mb-4">
+            <h3 className="font-semibold mb-2">🔍 Subcategory Breakdown</h3>
+            {Object.entries(subcategories).map(([category, items]) => (
+              <div key={category} className="mb-3">
+                <h4 className="text-sm font-bold text-gray-700 mb-1">{category}</h4>
+                <div className="flex flex-wrap gap-2">
+                  {items.map((item, idx) => (
+                    <span key={idx} className="inline-block bg-white border text-sm px-2 py-1 rounded shadow">
+                      {item.icon} {item.name} – £{item.amount.toFixed(2)} ({item.percent}%)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        <div className="flex justify-between items-center mt-4 gap-2">
-          <button
-            onClick={handleExportTips}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            📊 Export Tips Report
-          </button>
+        {aiTip && (
+          <div className="bg-yellow-50 p-4 rounded shadow whitespace-pre-line border-l-4 border-yellow-400">
+            <h4 className="font-bold text-yellow-700 mb-2">💡 AI Insight</h4>
+            <p className="text-sm text-gray-800">{aiTip}</p>
+          </div>
+        )}
 
-          <button
-            onClick={() => alert(generateCancelEmail("Netflix"))}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-          >
-            📧 Generate Cancel Email
-          </button>
+        <div className="my-4">
+          <label className="block font-medium">Upload Bank Statement (CSV or PDF)</label>
+          <input type="file" accept=".csv,.pdf" multiple onChange={handleFileChange} />
+          {error && <p className="text-red-600 text-sm">{error}</p>}
         </div>
+
+        <button onClick={handleApply} className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded">
+          Apply
+        </button>
       </main>
     </div>
   );
