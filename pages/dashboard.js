@@ -4,7 +4,6 @@ import { useState } from "react";
 import Papa from "papaparse";
 import { Doughnut } from "react-chartjs-2";
 import { pdfjs } from "react-pdf";
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 import {
   Chart as ChartJS,
   ArcElement,
@@ -31,128 +30,46 @@ export default function Dashboard() {
   };
 
   const handleApply = () => {
-  if (!files.length) return setError("Please upload at least one bank statement.");
-  setError("");
+    if (!files.length) return setError("Please upload at least one bank statement.");
+    setError("");
 
-  let allData = [];
-  let processedCount = 0;
+    let allData = [];
+    let processedCount = 0;
 
-  files.forEach((file) => {
-    if (file.type === "text/csv") {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: ({ data }) => {
-          allData.push(...data);
-          if (++processedCount === files.length) processTransactions(allData);
-        },
-      });
-    } else if (file.type === "application/pdf") {
-      const reader = new FileReader();
-      reader.onload = async function () {
-        try {
-          const typedarray = new Uint8Array(reader.result);
-          const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
-          let text = "";
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            const strings = content.items.map((item) => item.str).join(" ");
-            text += strings + "\n";
-          }
-
-          const lines = text.split("\n").filter(line => line.trim());
-          const transactions = lines
-            .filter(line => /\d{2}\/\d{2}\/\d{2}/.test(line))
-            .map(line => {
-              const amountMatch = line.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/g);
-              const amount = amountMatch ? amountMatch.pop().replace(/,/g, "") : "0";
-              return {
-                Description: line,
-                Amount: amount
-              };
-            });
-
-          allData.push(...transactions);
-          if (++processedCount === files.length) processTransactions(allData);
-        } catch (err) {
-          console.error("PDF parsing error:", err);
-          setError("Something went wrong parsing the PDF.");
-          if (++processedCount === files.length) processTransactions(allData);
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      if (++processedCount === files.length) processTransactions(allData);
-    }
-  });
-};
-    } else if (file.type === "application/pdf") {
-      const reader = new FileReader();
-      reader.onload = async function () {
-        try {
-          const typedarray = new Uint8Array(reader.result);
-          const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
-          let text = "";
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            const strings = content.items.map((item) => item.str).join(" ");
-            text += strings + "\n";
-          }
-
-          const lines = text.split("\n").filter(line => line.trim());
-
-          const transactions = lines
-            .filter(line => /\d{2}\/\d{2}\/\d{2}/.test(line)) // look for date patterns
-            .map(line => {
-              const amountMatch = line.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/g);
-              const amount = amountMatch ? amountMatch.pop().replace(/,/g, "") : "0";
-              return {
-                Description: line,
-                Amount: amount
-              };
-            });
-
-          allData.push(...transactions);
-          if (++processedCount === files.length) processTransactions(allData);
-        } catch (err) {
-          console.error("PDF parsing error:", err);
-          setError("Something went wrong parsing the PDF.");
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      if (++processedCount === files.length) processTransactions(allData);
-    }
+    files.forEach((file) => {
+      if (file.type === "text/csv") {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: ({ data }) => {
+            allData.push(...data);
+            if (++processedCount === files.length) processTransactions(allData);
           },
         });
       } else if (file.type === "application/pdf") {
         const reader = new FileReader();
         reader.onload = async function () {
-          const typedarray = new Uint8Array(reader.result);
-          const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
-          let text = "";
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            const strings = content.items.map((item) => item.str).join(" ");
-            text += strings + "\n";
+          try {
+            const typedarray = new Uint8Array(reader.result);
+            const pdf = await pdfjs.getDocument({ data: typedarray }).promise;
+            let text = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const content = await page.getTextContent();
+              const strings = content.items.map((item) => item.str).join(" ");
+              text += strings + "\n";
+            }
+            const lines = text.split("\n").filter((line) => line.trim());
+            const transactions = lines.map((line) => ({
+              Description: line,
+              Amount: line.match(/-?\d+(\.\d{2})?/)?.[0] || "0",
+            }));
+            allData.push(...transactions);
+            if (++processedCount === files.length) processTransactions(allData);
+          } catch (err) {
+            console.error("PDF parsing failed:", err);
+            if (++processedCount === files.length) processTransactions(allData);
           }
-          const lines = text.split("\n").filter((line) => line.trim());
-         const transactions = lines
-  .filter(line => line.match(/\d{2}\/\d{2}\/\d{2}/)) // Filter for lines with dates
-  .map(line => {
-    const amountMatch = line.match(/-?\d{1,3}(,\d{3})*(\.\d{2})?/g);
-    const amount = amountMatch ? amountMatch[amountMatch.length - 1].replace(/,/g, "") : "0";
-    return {
-      Description: line,
-      Amount: amount
-    };
-  });
-
-          allData.push(...transactions);
-          if (++processedCount === files.length) processTransactions(allData);
         };
         reader.readAsArrayBuffer(file);
       } else {
@@ -241,13 +158,24 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
       <main className="max-w-4xl mx-auto p-6">
-        <Image src="/wealthsagelogo.png" alt="WealthSage Logo" width={200} height={60} className="mb-4" />
+        <Image
+          src="/wealthsagelogo.png"
+          alt="WealthSage Logo"
+          width={200}
+          height={60}
+          className="mb-4"
+        />
+
         <h1 className="text-3xl font-bold text-green-700 mb-4">Dashboard</h1>
 
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
             <label>Savings Mode:</label>
-            <select value={mode} onChange={(e) => setMode(e.target.value)} className="border p-2 w-full rounded">
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value)}
+              className="border p-2 w-full rounded"
+            >
               <option>Low</option>
               <option>Medium</option>
               <option>High</option>
