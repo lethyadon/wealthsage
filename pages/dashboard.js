@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [streak, setStreak] = useState(0);
   const [mode, setMode] = useState("Low");
   const [error, setError] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(true);
 
   const handleFileChange = (e) => {
     setFiles(Array.from(e.target.files));
@@ -84,6 +85,7 @@ export default function Dashboard() {
     const cats = {};
     const subs = {};
     const descCounts = {};
+    const subTotals = {};
     let totalSpent = 0;
 
     data.forEach(({ Description = "", Amount = 0 }) => {
@@ -102,15 +104,16 @@ export default function Dashboard() {
       cats[category] = (cats[category] || 0) + val;
       subs[category] = subs[category] || [];
       if (!subs[category].includes(desc)) subs[category].push(desc);
+      subTotals[desc] = (subTotals[desc] || 0) + val;
     });
 
     setCategorized(cats);
     setSubcategories(subs);
-    generateAITips(cats, descCounts, totalSpent, subs);
+    generateAITips(cats, descCounts, totalSpent, subs, subTotals);
     setStreak((prev) => prev + 1);
   };
 
-  const generateAITips = (cats, descCounts, totalSpent, subs) => {
+  const generateAITips = (cats, descCounts, totalSpent, subs, subTotals) => {
     let totalUnnecessary = 0;
     let breakdown = [];
 
@@ -131,15 +134,21 @@ export default function Dashboard() {
       tips += `• ${category}: Save £${cut.toFixed(2)} from £${amount.toFixed(2)}\n`;
     });
 
-    const recurring = Object.entries(descCounts)
-      .filter(([desc, count]) => count >= 2)
-      .map(([desc]) => desc);
+    if (showSuggestions) {
+      const recurring = Object.entries(descCounts)
+        .filter(([desc, count]) => count >= 2)
+        .map(([desc]) => desc);
 
-    if (recurring.length) {
-      tips += `\n🔁 Possible subscriptions or repeat charges detected:\n`;
-      tips += recurring.map(desc => `• ${desc}`).join("\n");
+      if (recurring.length) {
+        tips += `\n🔁 Possible subscriptions or repeat charges detected:\n`;
+        tips += recurring.map(desc => `• ${desc} (£${subTotals[desc]?.toFixed(2) || "0.00"})`).join("\n");
 
-      tips += `\n💡 Suggestions: Consider cancelling ${recurring.slice(0, 3).join(", ")} to save more.`;
+        const top3 = recurring
+          .sort((a, b) => subTotals[b] - subTotals[a])
+          .slice(0, 3);
+
+        tips += `\n\n💡 Suggestions: Consider cancelling ${top3.join(", ")} to save more.`;
+      }
     }
 
     tips += `\n\n💸 Total spent from your uploaded statements: £${totalSpent.toFixed(2)}\n`;
@@ -201,6 +210,13 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="mb-4">
+          <label className="inline-flex items-center">
+            <input type="checkbox" checked={showSuggestions} onChange={(e) => setShowSuggestions(e.target.checked)} className="mr-2" />
+            Auto-suggest subscription cancellations
+          </label>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
             <label>Goal Amount (£):</label>
@@ -254,6 +270,13 @@ export default function Dashboard() {
             <p>{aiTip}</p>
           </div>
         )}
+
+        <button
+          onClick={() => window.print()}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-4"
+        >
+          Export / Print Report
+        </button>
 
         <p className="text-sm text-gray-500">🔥 Goal Streak: {streak} day(s)</p>
 
