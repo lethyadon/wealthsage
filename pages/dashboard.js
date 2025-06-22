@@ -241,7 +241,7 @@ export default function Dashboard() {
           <p className="text-center mt-2">£{totalSpend.toFixed(2)} / £{goalAmount.toFixed(2)}</p>
         </section>
 
-        {/* Category Goals vs Main Goal */}
+        {/* Category Goals vs Main Goal */
         <section className="bg-white p-4 rounded shadow">
           <h3 className="font-semibold mb-2">Category Goals vs Main Goal</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -270,3 +270,41 @@ export default function Dashboard() {
             ))}
           </div>
         </section>
+
+        {/* Recommendations */}
+        <section className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Recommendations</h3>
+          <ul className="list-disc list-inside space-y-2">
+            {recommendations.map((rec, i) => (
+              <li key={i} className="text-sm whitespace-pre-line">{rec}</li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Overview & Trend */}
+        <section className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white p-4 rounded shadow">
+            <h3 className="font-semibold mb-2">Spending Overview</h3>
+            <Doughnut
+              data={{
+                labels: Object.keys(categorized),
+                datasets: [{ data: Object.values(categorized), backgroundColor: ['#4CAF50','#2196F3','#FFC107','#FF5722','#9C27B0','#607D8B'] }]
+              }}
+            />
+            {alert && <p className="mt-2 text-red-600">{alert}</p>}
+            {showSuggestions && <p className="mt-2 text-sm">{weeklyAdvice}</p>}
+          </div>
+          <div className="bg-white p-4 rounded shadow">
+            <h3 className="font-semibold mb-2">Trend</h3>
+            <Line
+              data={{
+                labels: history.map(h => new Date(h.date).toLocaleDateString()),
+                datasets: [{ label: 'Spend', data: history.map(h => h.spend) }]
+              }}
+            />
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
