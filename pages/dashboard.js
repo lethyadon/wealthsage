@@ -223,12 +223,47 @@ export default function Dashboard() {
         </section>
         {/* Overview & Trend */}
         <section className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white p-4 rounded shadow"><h3 className="font-semibold mb-2">Spending Overview</h3><Doughnut data={{labels:Object.keys(categorized),datasets:[{data:Object.values(categorized),backgroundColor:['#4CAF50','#2196F3','#FFC107','#FF5722','#9C27B0','#607D8B']}]} />{alert&&<p className="mt-2 text-red-600">{alert}</p>}{showSuggestions&&<p className="mt-2">{weeklyAdvice}</p>}</div>
-          <div className="bg-white p-4 rounded shadow"><h3 className="font-semibold mb-2">Trend</h3><Line data={{labels:history.map(h=>new Date(h.date).toLocaleDateString()),datasets:[{label:'Total Spend',data:history.map(h=>h.spend)}]}} /></div>
+          <div className="bg-white p-4 rounded shadow">
+            <h3 className="font-semibold mb-2">Spending Overview</h3>
+            <Doughnut
+              data={{
+                labels: Object.keys(categorized),
+                datasets: [
+                  {
+                    data: Object.values(categorized),
+                    backgroundColor: ['#4CAF50','#2196F3','#FFC107','#FF5722','#9C27B0','#607D8B'],
+                  },
+                ],
+              }}
+            />
+            {alert && <p className="mt-2 text-red-600">{alert}</p>}
+            {showSuggestions && <p className="mt-2">{weeklyAdvice}</p>}
+          </div>
+
+          <div className="bg-white p-4 rounded shadow">
+            <h3 className="font-semibold mb-2">Trend</h3>
+            <Line
+              data={{
+                labels: history.map((h) => new Date(h.date).toLocaleDateString()),
+                datasets: [
+                  {
+                    label: 'Total Spend',
+                    data: history.map((h) => h.spend),
+                  },
+                ],
+              }}
+            />
+          </div>
         </section>
+
         {/* Recommendations */}
-        <section className="bg-white p-4 rounded shadow"><h3 className="font-semibold mb-2">Recommendations</h3><ul className="list-disc list-inside space-y-1">{recommendations.map((r,i)=><li key={i}>{r}</li>)}</ul></section>
+        <section className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Recommendations</h3>
+          <ul className="list-disc list-inside space-y-1">
+            {recommendations.map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
+          </ul>
+        </section>
       </main>
-    </div>
-  );
-}
+    </div>);
