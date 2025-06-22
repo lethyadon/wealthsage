@@ -121,186 +121,65 @@ export default function Dashboard() {
     ],
   };
 
+  const totalSpend = Object.values(categorized).reduce((a, b) => a + b, 0);
+  const remaining = income - totalSpend;
+  const progress = goalAmount > 0 ? ((income - remaining) / goalAmount) * 100 : 0;
+
   return (
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
       <main className="max-w-4xl mx-auto p-6">
-        <div className="mb-6 bg-white shadow p-4 rounded">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold mb-1">Savings Mode:</label>
-              <select value={mode} onChange={(e) => setMode(e.target.value)} className="w-full border p-2 rounded">
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-              </select>
-              <label className="block mt-4 font-semibold mb-1">Auto-suggest subscription cancellations</label>
-              <input type="checkbox" checked={showSuggestions} onChange={(e) => setShowSuggestions(e.target.checked)} />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Income (£):</label>
-              <input
-                type="number"
-                value={income}
-                onChange={(e) => setIncome(Number(e.target.value))}
-                className="w-full border p-2 rounded"
-              />
-              <label className="block font-semibold mt-2">Income Frequency:</label>
-              <select
-                value={incomeFrequency}
-                onChange={(e) => setIncomeFrequency(e.target.value)}
-                className="w-full border p-2 rounded"
-              >
-                <option value="weekly">Per Week</option>
-                <option value="monthly">Per Month</option>
-                <option value="yearly">Per Year</option>
-              </select>
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Goal Amount (£):</label>
-              <input
-                type="number"
-                value={goalAmount}
-                onChange={(e) => setGoalAmount(Number(e.target.value))}
-                className="w-full border p-2 rounded"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Deadline:</label>
-              <input
-                type="date"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-                className="w-full border p-2 rounded"
-              />
-            </div>
+        <h2 className="text-2xl font-bold mb-4">📊 Dashboard Overview</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white p-4 rounded shadow">
+            <h4 className="text-sm font-semibold">Total Spend</h4>
+            <p className="text-lg font-bold text-red-600">£{totalSpend.toFixed(2)}</p>
           </div>
-          <div className="mt-4">
-            <label className="font-semibold block mb-1">Upload Bank Statement(s) (CSV or PDF)</label>
-            <input type="file" accept=".csv,.pdf" multiple onChange={(e) => setFiles([...e.target.files])} />
+          <div className="bg-white p-4 rounded shadow">
+            <h4 className="text-sm font-semibold">Remaining Income</h4>
+            <p className="text-lg font-bold text-green-600">£{remaining.toFixed(2)}</p>
           </div>
-          <button
-            onClick={handleApply}
-            className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            Apply
-          </button>
+          <div className="bg-white p-4 rounded shadow">
+            <h4 className="text-sm font-semibold">Goal Progress</h4>
+            <div className="w-full bg-gray-200 rounded-full h-4 mt-2">
+              <div className="bg-blue-600 h-4 rounded-full" style={{ width: `${progress.toFixed(1)}%` }}></div>
+            </div>
+            <p className="text-xs mt-1 text-gray-600">{progress.toFixed(1)}%</p>
+          </div>
         </div>
-<div className="bg-white p-4 rounded shadow mb-6">
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <label className="block font-semibold mb-1">Savings Mode:</label>
-      <select
-        value={mode}
-        onChange={(e) => setMode(e.target.value)}
-        className="w-full border rounded p-2"
-      >
-        <option>Low</option>
-        <option>Medium</option>
-        <option>High</option>
-      </select>
-    </div>
-    <div>
-      <label className="block font-semibold mb-1">Income (£):</label>
-      <input
-        type="number"
-        value={income}
-        onChange={(e) => setIncome(Number(e.target.value))}
-        className="w-full border rounded p-2"
-      />
-    </div>
-    <div>
-      <label className="block font-semibold mb-1">Income Frequency:</label>
-      <select
-        value={incomeFrequency}
-        onChange={(e) => setIncomeFrequency(e.target.value)}
-        className="w-full border rounded p-2"
-      >
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
-      </select>
-    </div>
-    <div className="flex items-center mt-6">
-      <label className="flex items-center space-x-2 text-sm">
-        <input
-          type="checkbox"
-          checked={showSuggestions}
-          onChange={(e) => setShowSuggestions(e.target.checked)}
-        />
-        <span>Auto-suggest subscription cancellations</span>
-      </label>
-    </div>
-    <div>
-      <label className="block font-semibold mb-1">Goal Amount (£):</label>
-      <input
-        type="number"
-        value={goalAmount}
-        onChange={(e) => setGoalAmount(Number(e.target.value))}
-        className="w-full border rounded p-2"
-      />
-    </div>
-    <div>
-      <label className="block font-semibold mb-1">Deadline:</label>
-      <input
-        type="date"
-        value={deadline}
-        onChange={(e) => setDeadline(e.target.value)}
-        className="w-full border rounded p-2"
-      />
-    </div>
-  </div>
-  <div className="mt-4">
-    <label className="block font-semibold mb-1">
-      Upload Bank Statement(s) (CSV or PDF, up to 3)
-    </label>
-    <input
-      type="file"
-      accept=".csv,.pdf"
-      multiple
-      onChange={(e) => setFiles([...e.target.files])}
-      className="w-full border rounded p-2"
-    />
-  </div>
-  <button
-    onClick={() => {
-      // Trigger processing here (example: you could call processTransactions with uploaded data)
-    }}
-    className="mt-4 bg-green-600 text-white px-4 py-2 rounded"
-  >
-    Apply
-  </button>
+
+        {/* Keep existing components: chart, subcategories, tips, etc. */}
+<div className="bg-white rounded-lg p-6 shadow-md mb-6">
+  <h2 className="text-2xl font-bold mb-4">📊 Spending Overview</h2>
+  <Doughnut data={chartData} />
 </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-md mb-6">
-          <h2 className="text-2xl font-bold mb-4">📊 Spending Overview</h2>
-          <Doughnut data={chartData} />
+{Object.keys(subcategories).length > 0 && (
+  <div className="bg-gray-100 p-4 rounded-lg shadow mb-4">
+    <h3 className="font-semibold mb-2">🔍 Subcategory Breakdown</h3>
+    {Object.entries(subcategories).map(([category, items]) => (
+      <div key={category} className="mb-3">
+        <h4 className="text-sm font-bold text-gray-700 mb-1">{category}</h4>
+        <div className="flex flex-wrap gap-2">
+          {items.map((item, idx) => (
+            <span key={idx} className="inline-block bg-white border text-sm px-2 py-1 rounded shadow">
+              {item.icon} {item.name} – £{item.amount.toFixed(2)} ({item.percent}%)
+            </span>
+          ))}
         </div>
+      </div>
+    ))}
+  </div>
+)}
 
-        {Object.keys(subcategories).length > 0 && (
-          <div className="bg-gray-100 p-4 rounded-lg shadow mb-4">
-            <h3 className="font-semibold mb-2">🔍 Subcategory Breakdown</h3>
-            {Object.entries(subcategories).map(([category, items]) => (
-              <div key={category} className="mb-3">
-                <h4 className="text-sm font-bold text-gray-700 mb-1">{category}</h4>
-                <div className="flex flex-wrap gap-2">
-                  {items.map((item, idx) => (
-                    <span key={idx} className="inline-block bg-white border text-sm px-2 py-1 rounded shadow">
-                      {item.icon} {item.name} – £{item.amount.toFixed(2)} ({item.percent}%)
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+{aiTip && (
+  <div className="bg-yellow-50 p-4 rounded shadow whitespace-pre-line border-l-4 border-yellow-400">
+    <h4 className="font-bold text-yellow-700 mb-2">💡 AI Insight</h4>
+    <p className="text-sm text-gray-800">{aiTip}</p>
+  </div>
+)}
 
-        {aiTip && (
-          <div className="bg-yellow-50 p-4 rounded shadow whitespace-pre-line border-l-4 border-yellow-400">
-            <h4 className="font-bold text-yellow-700 mb-2">💡 AI Insight</h4>
-            <p className="text-sm text-gray-800">{aiTip}</p>
-          </div>
-        )}
       </main>
     </div>
   );
