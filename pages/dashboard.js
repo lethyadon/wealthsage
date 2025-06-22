@@ -21,7 +21,6 @@ const groceryAlternatives = {
 };
 
 export default function Dashboard() {
-  // State
   const [income, setIncome] = useState(0);
   const [incomeFrequency, setIncomeFrequency] = useState("monthly");
   const [savingsMode, setSavingsMode] = useState("Low");
@@ -45,7 +44,6 @@ export default function Dashboard() {
     "netflix", "spotify", "tinder", "prime", "hulu", "disney", "deliveroo", "ubereats"
   ];
 
-  // Deadline countdown
   useEffect(() => {
     if (!deadline) return;
     const today = new Date();
@@ -54,11 +52,9 @@ export default function Dashboard() {
     setDaysLeft(diff > 0 ? diff : 0);
   }, [deadline]);
 
-  // File handling
   const handleFiles = (e) => setFiles(Array.from(e.target.files));
   const handleApply = () => processFiles(files);
 
-  // Parse files
   const processFiles = async (fileList) => {
     let transactions = [];
     for (let file of fileList) {
@@ -82,7 +78,6 @@ export default function Dashboard() {
     processTransactions(transactions);
   };
 
-  // Analyze transactions
   const processTransactions = (data) => {
     const cats = {};
     const count = {};
@@ -132,7 +127,6 @@ export default function Dashboard() {
     if (cats['Groceries']) recs.push(`• Groceries: try Lidl/Aldi. ${groceryHints[0] || 'Switch to own brands.'}`);
     recs.push(`Reallocate: 4–5% savings | S&P500 ETF 7–10% | Stocks ISA 8–12%.`);
     setRecommendations(recs);
-
     setHistory(prev => [...prev, { date: new Date().toISOString(), spend, categorized: cats }]);
   };
 
@@ -209,4 +203,57 @@ export default function Dashboard() {
 
         {/* Category Bubbles */}
         <section className="bg-white p-4 rounded shadow">
-          <h2 className="text-xl font-semibold mb-2">Category Goals vs Main Goal</n
+          <h2 className="text-xl font-semibold mb-2">Category Goals vs Main Goal</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {['Groceries','Transport','Subscriptions','Housing','Other'].map(cat => {
+              const p = pct(cat);
+              return (
+                <div key={cat} className="text-center">
+                  <h4 className="font-semibold mb-1 text-sm">{cat}</h4>
+                  <div className="relative mx-auto w-20 h-20">
+                    <svg viewBox="0 0 36 36" className="transform -rotate-90 w-full h-full">
+                      <circle cx="18" cy="18" r="15.9155" stroke="#eee" strokeWidth="4" fill="none" />
+                      <circle cx="18" cy="18" r="15.9155" stroke="#4CAF50" strokeWidth="4" strokeDasharray={`${p},100`} fill="none" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold">{p}%</div>
+                  </div>
+                  <p className="mt-1 text-xs">£{(categorized[cat]||0).toFixed(2)}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Recommendations */}
+        <section className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">Recommendations</h2>
+          <ul className="list-disc list-inside space-y-2 text-sm">
+            {recommendations.map((rec, i) => (<li key={i} className="whitespace-pre-line">{rec}</li>))}
+          </ul>
+        </section>
+
+        {/* Spending Overview */}
+        <section className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">Spending Overview</h2>
+          <div className="text-center mb-4">
+            <p className="text-sm">Total Spend</p>
+            <p className="text-xl font-bold">£{totalSpend.toFixed(2)}</p>
+            <p className="text-sm mt-2">{alert}</p>
+          </div>
+          <Doughnut data={{labels: Object.keys(categorized), datasets: [{data: Object.values(categorized), backgroundColor: ['#4CAF50','#2196F3','#FFC107','#FF5722','#9C27B0','#607D8B']} ]}} />
+        </section>
+
+        {/* History */}
+        <section className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">History</h2>
+          <ul className="text-sm space-y-1">
+            {history.map((h, idx) => (
+              <li key={idx}>📅 {new Date(h.date).toLocaleDateString()}: £{h.spend.toFixed(2)}</li>
+            ))}
+          </ul>
+        </section>
+
+      </main>
+    </div>
+  );
+}
