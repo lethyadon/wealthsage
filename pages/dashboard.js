@@ -186,18 +186,18 @@ export default function Dashboard() {
             <label className="block text-sm font-medium mb-1">Upload Bank Statements <span className="text-red-500">*</span></label>
             <input type="file" multiple accept=".csv,.pdf" onChange={handleFiles} className="w-full border p-2 rounded" />
           </div>
-          <button onClick={handleApply} className="bg-green-600 text-white px-4 py-2 rounded">Apply</button>
+          <p className="text-sm italic text-gray-600">No bank statements? No problem! Manually add expenses here.</p>
           <form onSubmit={addEntry} className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-sm font-medium">Category <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium">Category</label>
               <input placeholder="Category" value={newEntry.category} onChange={e => setNewEntry({ ...newEntry, category: e.target.value })} className="w-full border p-2 rounded" />
             </div>
             <div>
-              <label className="block text-sm font-medium">Subcategory <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium">Subcategory</label>
               <input placeholder="Subcategory" value={newEntry.subcategory} onChange={e => setNewEntry({ ...newEntry, subcategory: e.target.value })} className="w-full border p-2 rounded" />
             </div>
             <div>
-              <label className="block text-sm font-medium">Amount (£) <span className="text-red-500">*</span> (£)</label>
+              <label className="block text-sm font-medium">Amount (£)</label>
               <input type="number" placeholder="Amount" value={newEntry.amount} onChange={e => setNewEntry({ ...newEntry, amount: e.target.value })} className="w-full border p-2 rounded" />
             </div>
             <div className="col-span-3 text-right">
@@ -214,7 +214,31 @@ export default function Dashboard() {
             </div>
           </div>
           <button onClick={exportPDF} className="bg-indigo-600 text-white px-4 py-2 rounded">Export PDF</button>
+          <button onClick={handleApply} className="bg-green-600 text-white px-4 py-2 rounded">Apply</button>
           {daysLeft !== null && <p className="text-sm">⏳ {daysLeft} days left</p>}
+        </section>
+
+        {/* Main Goal Bubble */}
+        <section className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">🎯 {goalName || 'Main Goal'}</h3>
+          <div className="relative mx-auto w-32 h-32">
+            <svg viewBox="0 0 36 36" className="transform -rotate-90 w-full h-full">
+              <circle cx="18" cy="18" r="15.9155" stroke="#eee" strokeWidth="4" fill="none" />
+              <circle
+                cx="18"
+                cy="18"
+                r="15.9155"
+                stroke="#2196F3"
+                strokeWidth="4"
+                strokeDasharray={`${pct('Total')},100`}
+                fill="none"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center text-lg font-semibold">
+              {goalAmount ? ((totalSpend/goalAmount)*100).toFixed(1) : '0'}%
+            </div>
+          </div>
+          <p className="text-center mt-2">£{totalSpend.toFixed(2)} / £{goalAmount.toFixed(2)}</p>
         </section>
 
         {/* Category Goals vs Main Goal */}
@@ -246,22 +270,3 @@ export default function Dashboard() {
             ))}
           </div>
         </section>
-
-        {/* Overview & Trend */}
-        <section className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">Spending Overview</h3>
-            <Doughnut data={{ labels: Object.keys(categorized), datasets: [{ data: Object.values(categorized), backgroundColor: ['#4CAF50','#2196F3','#FFC107','#FF5722','#9C27B0','#607D8B'] }] }} />
-            {alert && <p className="mt-2 text-red-600">{alert}</p>}
-            {showSuggestions && <p className="mt-2 text-sm">{weeklyAdvice}</p>}
-          </div>
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">Trend</h3>
-            <Line data={{ labels: history.map(h => new Date(h.date).toLocaleDateString()), datasets: [{ label: 'Spend', data: history.map(h => h.spend) }] }} />
-          </div>
-        </section>
-
-      </main>
-    </div>
-  );
-}
