@@ -1,6 +1,6 @@
 // pages/dashboard.js
 import NavBar from "../components/NavBar";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Papa from "papaparse";
 import { Doughnut } from "react-chartjs-2";
 import { pdfjs } from "react-pdf";
@@ -10,14 +10,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import Image from "next/image";
-
-let saveAs;
-if (typeof window !== "undefined") {
-  import("file-saver").then((module) => {
-    saveAs = module.saveAs;
-  });
-}
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -61,7 +53,6 @@ export default function Dashboard() {
 
     data.forEach(({ Description = "", Amount = 0 }) => {
       let category = "Other";
-      let sub = "Other";
       const desc = Description.toLowerCase();
       const val = Math.abs(parseFloat(Amount));
 
@@ -129,8 +120,69 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
       <main className="max-w-4xl mx-auto p-6">
-        <h2 className="text-2xl font-bold mb-4">📊 Dashboard Overview</h2>
+        <div className="bg-white shadow p-4 rounded mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-semibold mb-1">Savings Mode:</label>
+              <select value={mode} onChange={(e) => setMode(e.target.value)} className="w-full border p-2 rounded">
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+              </select>
+              <label className="block mt-4 font-semibold mb-1">Auto-suggest subscription cancellations</label>
+              <input type="checkbox" checked={showSuggestions} onChange={(e) => setShowSuggestions(e.target.checked)} />
+            </div>
+            <div>
+              <label className="block font-semibold mb-1">Income (£):</label>
+              <input
+                type="number"
+                value={income}
+                onChange={(e) => setIncome(Number(e.target.value))}
+                className="w-full border p-2 rounded"
+              />
+              <label className="block font-semibold mt-2">Income Frequency:</label>
+              <select
+                value={incomeFrequency}
+                onChange={(e) => setIncomeFrequency(e.target.value)}
+                className="w-full border p-2 rounded"
+              >
+                <option value="weekly">Per Week</option>
+                <option value="monthly">Per Month</option>
+                <option value="yearly">Per Year</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-semibold mb-1">Goal Amount (£):</label>
+              <input
+                type="number"
+                value={goalAmount}
+                onChange={(e) => setGoalAmount(Number(e.target.value))}
+                className="w-full border p-2 rounded"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold mb-1">Deadline:</label>
+              <input
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                className="w-full border p-2 rounded"
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <label className="font-semibold block mb-1">Upload Bank Statement(s) (CSV or PDF)</label>
+            <input type="file" accept=".csv,.pdf" multiple onChange={(e) => setFiles([...e.target.files])} />
+          </div>
+          <button
+            onClick={handleApply}
+            className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Apply
+          </button>
+        </div>
 
+        <h2 className="text-2xl font-bold mb-4">📊 Dashboard Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-4 rounded shadow">
             <h4 className="text-sm font-semibold">Total Spend</h4>
