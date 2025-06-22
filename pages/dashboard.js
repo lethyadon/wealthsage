@@ -30,6 +30,8 @@ ChartJS.register(
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export default function Dashboard() {
+  const totalSpend = Object.values(categorized).reduce((a, b) => a + b, 0);
+
   const [income, setIncome] = useState(0);
   const [incomeFrequency, setIncomeFrequency] = useState("monthly");
   const [showSuggestions, setShowSuggestions] = useState(true);
