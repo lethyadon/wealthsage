@@ -119,7 +119,10 @@ export default function Dashboard() {
     setCategorized(cats);
     const spend = Object.values(cats).reduce((a, b) => a + b, 0);
     setHistory(prev => [...prev, { date: new Date().toISOString(), spend }]);
-    const top3 = Object.entries(cats).sort(([,a],[,b]) => b - a).slice(0,3).map(([k,v])=>`${k}: £${v.toFixed(2)}`);
+    const top3 = Object.entries(cats)
+      .sort(([,a],[,b]) => b - a)
+      .slice(0,3)
+      .map(([k,v]) => `${k}: £${v.toFixed(2)}`);
     setWeeklyAdvice(`Top: ${top3.join(', ')}`);
     const monthlyInc = incomeFrequency==='weekly'?income*4.33:incomeFrequency==='yearly'?income/12:income;
     const diff = monthlyInc - spend;
@@ -137,12 +140,12 @@ export default function Dashboard() {
     autoTable(doc, {
       startY: 30,
       head: [['Category','Amount']],
-      body: Object.entries(categorized).map(([c,a])=>[c,`£${a.toFixed(2)}`])
+      body: Object.entries(categorized).map(([c,a]) => [c, `£${a.toFixed(2)}`])
     });
     doc.save('report.pdf');
   };
 
-  const pct = (cat) => goalAmount ? ((categorized[cat]||0)/goalAmount*100).toFixed(1) : '0';
+  const pct = (cat) => goalAmount ? ((categorized[cat] || 0) / goalAmount * 100).toFixed(1) : '0';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -150,29 +153,29 @@ export default function Dashboard() {
       <main className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Settings */}
         <section className="grid grid-cols-2 gap-4 bg-white p-4 rounded shadow">
-          <input type="number" value={income} onChange={e=>setIncome(+e.target.value)} placeholder="Income (£)" className="border p-2 rounded" />
-          <select value={incomeFrequency} onChange={e=>setIncomeFrequency(e.target.value)} className="border p-2 rounded">
+          <input type="number" value={income} onChange={e => setIncome(+e.target.value)} placeholder="Income (£)" className="border p-2 rounded" />
+          <select value={incomeFrequency} onChange={e => setIncomeFrequency(e.target.value)} className="border p-2 rounded">
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
             <option value="yearly">Yearly</option>
           </select>
-          <input type="text" value={goalName} onChange={e=>setGoalName(e.target.value)} placeholder="Goal Name" className="border p-2 rounded" />
-          <input type="number" value={goalAmount} onChange={e=>setGoalAmount(+e.target.value)} placeholder="Goal Amount (£)" className="border p-2 rounded" />
-          <input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)} className="border p-2 rounded" />
-          <label className="flex items-center space-x-2"><input type="checkbox" checked={showSuggestions} onChange={e=>setShowSuggestions(e.target.checked)} /><span>Auto-suggest</span></label>
+          <input type="text" value={goalName} onChange={e => setGoalName(e.target.value)} placeholder="Goal Name" className="border p-2 rounded" />
+          <input type="number" value={goalAmount} onChange={e => setGoalAmount(+e.target.value)} placeholder="Goal Amount (£)" className="border p-2 rounded" />
+          <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="border p-2 rounded" />
+          <label className="flex items-center space-x-2"><input type="checkbox" checked={showSuggestions} onChange={e => setShowSuggestions(e.target.checked)} /><span>Auto-suggest</span></label>
         </section>
         {/* Upload & Entry */}
         <section className="bg-white p-4 rounded shadow space-y-4">
           <input type="file" multiple accept=".csv,.pdf" onChange={handleFiles} className="w-full border p-2 rounded" />
           <button onClick={handleApply} className="bg-green-600 text-white px-4 py-2 rounded">Apply</button>
           <form onSubmit={addEntry} className="flex gap-2 flex-wrap">
-            <input placeholder="Category" value={newEntry.category} onChange={e=>setNewEntry({...newEntry,category:e.target.value})} className="border p-2 rounded" />
-            <input placeholder="Subcategory" value={newEntry.subcategory} onChange={e=>setNewEntry({...newEntry,subcategory:e.target.value})} className="border p-2 rounded" />
-            <input type="number" placeholder="Amount (£)" value={newEntry.amount} onChange={e=>setNewEntry({...newEntry,amount:e.target.value})} className="border p-2 w-24 rounded" />
+            <input placeholder="Category" value={newEntry.category} onChange={e => setNewEntry({ ...newEntry, category: e.target.value })} className="border p-2 rounded" />
+            <input placeholder="Subcategory" value={newEntry.subcategory} onChange={e => setNewEntry({ ...newEntry, subcategory: e.target.value })} className="border p-2 rounded" />
+            <input type="number" placeholder="Amount (£)" value={newEntry.amount} onChange={e => setNewEntry({ ...newEntry, amount: e.target.value })} className="border p-2 w-24 rounded" />
             <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Add Entry</button>
           </form>
           <div className="flex gap-2">
-            <input placeholder="Exclude Merchant" value={newExclude} onChange={e=>setNewExclude(e.target.value)} className="border p-2 rounded flex-grow" />
+            <input placeholder="Exclude Merchant" value={newExclude} onChange={e => setNewExclude(e.target.value)} className="border p-2 rounded flex-grow" />
             <button onClick={addExclude} className="bg-gray-700 text-white px-4 py-2 rounded">Exclude</button>
           </div>
           <button onClick={exportPDF} className="bg-indigo-600 text-white px-4 py-2 rounded">Export PDF</button>
@@ -182,9 +185,16 @@ export default function Dashboard() {
         <section className="grid md:grid-cols-2 gap-6">
           <div className="bg-white p-4 rounded shadow">
             <h3 className="font-semibold mb-2">Spending Overview</h3>
-            <Doughnut data={{ labels:Object.keys(categorized), datasets:[{ data:Object.values(categorized), backgroundColor:['#4CAF50','#2196F3','#FFC107','#FF5722','#9C27B0','#607D8B'] }] }} />
+            <Doughnut data={{ labels: Object.keys(categorized), datasets: [{ data: Object.values(categorized), backgroundColor: ['#4CAF50','#2196F3','#FFC107','#FF5722','#9C27B0','#607D8B'] }] }} />
             {alert && <p className="mt-2 text-red-600">{alert}</p>}
             {showSuggestions && <p className="mt-2">{weeklyAdvice}</p>}
           </div>
           <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">Trend</n
+            <h3 className="font-semibold mb-2">Trend</h3>
+            <Line data={{ labels: history.map(h => new Date(h.date).toLocaleDateString()), datasets: [{ label: 'Spend', data: history.map(h => h.spend) }] }} />
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
