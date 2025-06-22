@@ -149,37 +149,35 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Keep existing components: chart, subcategories, tips, etc. */}
-<div className="bg-white rounded-lg p-6 shadow-md mb-6">
-  <h2 className="text-2xl font-bold mb-4">📊 Spending Overview</h2>
-  <Doughnut data={chartData} />
-</div>
-
-{Object.keys(subcategories).length > 0 && (
-  <div className="bg-gray-100 p-4 rounded-lg shadow mb-4">
-    <h3 className="font-semibold mb-2">🔍 Subcategory Breakdown</h3>
-    {Object.entries(subcategories).map(([category, items]) => (
-      <div key={category} className="mb-3">
-        <h4 className="text-sm font-bold text-gray-700 mb-1">{category}</h4>
-        <div className="flex flex-wrap gap-2">
-          {items.map((item, idx) => (
-            <span key={idx} className="inline-block bg-white border text-sm px-2 py-1 rounded shadow">
-              {item.icon} {item.name} – £{item.amount.toFixed(2)} ({item.percent}%)
-            </span>
-          ))}
+        <div className="bg-white rounded-lg p-6 shadow-md mb-6">
+          <h2 className="text-2xl font-bold mb-4">📊 Spending Overview</h2>
+          <Doughnut data={chartData} />
         </div>
-      </div>
-    ))}
-  </div>
-)}
 
-{aiTip && (
-  <div className="bg-yellow-50 p-4 rounded shadow whitespace-pre-line border-l-4 border-yellow-400">
-    <h4 className="font-bold text-yellow-700 mb-2">💡 AI Insight</h4>
-    <p className="text-sm text-gray-800">{aiTip}</p>
-  </div>
-)}
+        {Object.keys(subcategories).length > 0 && (
+          <div className="bg-gray-100 p-4 rounded-lg shadow mb-4">
+            <h3 className="font-semibold mb-2">🔍 Subcategory Breakdown</h3>
+            {Object.entries(subcategories).map(([category, items]) => (
+              <div key={category} className="mb-3">
+                <h4 className="text-sm font-bold text-gray-700 mb-1">{category}</h4>
+                <div className="flex flex-wrap gap-2">
+                  {items.map((item, idx) => (
+                    <span key={idx} className="inline-block bg-white border text-sm px-2 py-1 rounded shadow">
+                      {item.icon} {item.name} – £{item.amount.toFixed(2)} ({item.percent}%)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
+        {aiTip && (
+          <div className="bg-yellow-50 p-4 rounded shadow whitespace-pre-line border-l-4 border-yellow-400">
+            <h4 className="font-bold text-yellow-700 mb-2">💡 AI Insight</h4>
+            <p className="text-sm text-gray-800">{aiTip}</p>
+          </div>
+        )}
       </main>
     </div>
   );
