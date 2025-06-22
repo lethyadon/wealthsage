@@ -30,8 +30,6 @@ ChartJS.register(
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export default function Dashboard() {
-  const totalSpend = Object.values(categorized).reduce((a, b) => a + b, 0);
-
   const [income, setIncome] = useState(0);
   const [incomeFrequency, setIncomeFrequency] = useState("monthly");
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -48,6 +46,9 @@ export default function Dashboard() {
   const [newEntry, setNewEntry] = useState({ category: "", subcategory: "", amount: "" });
   const [excluded, setExcluded] = useState([]);
   const [newExclude, setNewExclude] = useState("");
+
+  // Compute totalSpend after categorized is defined
+  const totalSpend = Object.values(categorized).reduce((a, b) => a + b, 0);
 
   const subscriptionKeywords = [
     "netflix","spotify","tinder","prime","hulu","disney","deliveroo","ubereats",
@@ -142,7 +143,8 @@ export default function Dashboard() {
     doc.save('report.pdf');
   };
 
-  const pct = (cat) => goalAmount ? ((categorized[cat]||0)/goalAmount*100).toFixed(1) : '0';
+  const pct = (cat) =>
+    goalAmount ? ((categorized[cat]||0)/goalAmount*100).toFixed(1) : '0';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -151,7 +153,7 @@ export default function Dashboard() {
         {/* Settings */}
         <section className="grid grid-cols-2 gap-4 bg-white p-4 rounded shadow">
           <div>
-            <label className="block text-sm font-medium">Income (£) <span className="text-red-500">*</span> (£)</label>
+            <label className="block text-sm font-medium">Income (£) <span className="text-red-500">*</span></label>
             <input type="number" value={income} onChange={e => setIncome(+e.target.value)} className="w-full border p-2 rounded" />
           </div>
           <div>
@@ -167,7 +169,7 @@ export default function Dashboard() {
             <input type="text" value={goalName} onChange={e => setGoalName(e.target.value)} className="w-full border p-2 rounded" />
           </div>
           <div>
-            <label className="block text-sm font-medium">Goal Amount (£) <span className="text-red-500">*</span> (£)</label>
+            <label className="block text-sm font-medium">Goal Amount (£) <span className="text-red-500">*</span></label>
             <input type="number" value={goalAmount} onChange={e => setGoalAmount(+e.target.value)} className="w-full border p-2 rounded" />
           </div>
           <div>
@@ -191,122 +193,8 @@ export default function Dashboard() {
           <p className="text-sm italic text-gray-600">No bank statements? No problem! Manually add expenses here.</p>
           <form onSubmit={addEntry} className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-sm font-medium">Category</label>
+              <label className="block text-sm font-medium">Category <span className="text-red-500">*</span></label>
               <input placeholder="Category" value={newEntry.category} onChange={e => setNewEntry({ ...newEntry, category: e.target.value })} className="w-full border p-2 rounded" />
             </div>
             <div>
-              <label className="block text-sm font-medium">Subcategory</label>
-              <input placeholder="Subcategory" value={newEntry.subcategory} onChange={e => setNewEntry({ ...newEntry, subcategory: e.target.value })} className="w-full border p-2 rounded" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Amount (£)</label>
-              <input type="number" placeholder="Amount" value={newEntry.amount} onChange={e => setNewEntry({ ...newEntry, amount: e.target.value })} className="w-full border p-2 rounded" />
-            </div>
-            <div className="col-span-3 text-right">
-              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Add Entry</button>
-            </div>
-          </form>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-sm font-medium">Exclude Merchant</label>
-              <input placeholder="Keyword" value={newExclude} onChange={e => setNewExclude(e.target.value)} className="w-full border p-2 rounded" />
-            </div>
-            <div className="flex items-end">
-              <button onClick={addExclude} className="w-full bg-gray-700 text-white px-4 py-2 rounded">Exclude</button>
-            </div>
-          </div>
-          <button onClick={exportPDF} className="bg-indigo-600 text-white px-4 py-2 rounded">Export PDF</button>
-          <button onClick={handleApply} className="bg-green-600 text-white px-4 py-2 rounded">Apply</button>
-          {daysLeft !== null && <p className="text-sm">⏳ {daysLeft} days left</p>}
-        </section>
-
-        {/* Main Goal Bubble */}
-        <section className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">🎯 {goalName || 'Main Goal'}</h3>
-          <div className="relative mx-auto w-32 h-32">
-            <svg viewBox="0 0 36 36" className="transform -rotate-90 w-full h-full">
-              <circle cx="18" cy="18" r="15.9155" stroke="#eee" strokeWidth="4" fill="none" />
-              <circle
-                cx="18"
-                cy="18"
-                r="15.9155"
-                stroke="#2196F3"
-                strokeWidth="4"
-                strokeDasharray={`${pct('Total')},100`}
-                fill="none"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center text-lg font-semibold">
-              {goalAmount ? ((totalSpend/goalAmount)*100).toFixed(1) : '0'}%
-            </div>
-          </div>
-          <p className="text-center mt-2">£{totalSpend.toFixed(2)} / £{goalAmount.toFixed(2)}</p>
-        </section>
-
-        {/* Category Goals vs Main Goal */}
-        <section className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">Category Goals vs Main Goal</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {['Groceries','Transport','Subscriptions','Housing','Other'].map((cat) => (
-              <div key={cat} className="text-center">
-                <h4 className="text-sm font-medium mb-1">{cat}</h4>
-                <div className="relative mx-auto w-20 h-20">
-                  <svg viewBox="0 0 36 36" className="transform -rotate-90 w-full h-full">
-                    <circle cx="18" cy="18" r="15.9155" stroke="#eee" strokeWidth="4" fill="none" />
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="15.9155"
-                      stroke="#4CAF50"
-                      strokeWidth="4"
-                      strokeDasharray={`${pct(cat)},100`}
-                      fill="none"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold">
-                    {pct(cat)}%
-                  </div>
-                </div>
-                <p className="text-xs mt-1">£{(categorized[cat]||0).toFixed(2)}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Recommendations */}
-        <section className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">Recommendations</h3>
-          <ul className="list-disc list-inside space-y-2">
-            {recommendations.map((rec, i) => (
-              <li key={i} className="text-sm whitespace-pre-line">{rec}</li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Overview & Trend */}
-        <section className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">Spending Overview</h3>
-            <Doughnut
-              data={{
-                labels: Object.keys(categorized),
-                datasets: [{ data: Object.values(categorized), backgroundColor: ['#4CAF50','#2196F3','#FFC107','#FF5722','#9C27B0','#607D8B'] }]
-              }}
-            />
-            {alert && <p className="mt-2 text-red-600">{alert}</p>}
-            {showSuggestions && <p className="mt-2 text-sm">{weeklyAdvice}</p>}
-          </div>
-          <div className="bg-white p-4 rounded shadow">
-            <h3 className="font-semibold mb-2">Trend</h3>
-            <Line
-              data={{
-                labels: history.map(h => new Date(h.date).toLocaleDateString()),
-                datasets: [{ label: 'Spend', data: history.map(h => h.spend) }]
-              }}
-            />
-          </div>
-        </section>
-      </main>
-    </div>
-  );
-}
+              <label className="block text-sm font-medium">Subcategory <span className="text-red-500">*</span></label>
