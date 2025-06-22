@@ -10,14 +10,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import Image from "next/image";
-
-let saveAs;
-if (typeof window !== "undefined") {
-  import("file-saver").then((module) => {
-    saveAs = module.saveAs;
-  });
-}
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -25,229 +17,202 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 export default function Dashboard() {
   const [income, setIncome] = useState(0);
   const [incomeFrequency, setIncomeFrequency] = useState("monthly");
-  const [goalAmount, setGoalAmount] = useState(0);
-  const [deadline, setDeadline] = useState("");
+  const [savingsMode, setSavingsMode] = useState("Low");
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const [files, setFiles] = useState([]);
   const [categorized, setCategorized] = useState({});
-  const [subcategories, setSubcategories] = useState({});
-  const [aiTip, setAiTip] = useState("");
-  const [mode, setMode] = useState("Low");
-  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [recurring, setRecurring] = useState([]);
+  const [totalSpend, setTotalSpend] = useState(0);
+  const [weeklyAdvice, setWeeklyAdvice] = useState("");
+  const [alert, setAlert] = useState("");
+  const [excludedMerchants, setExcludedMerchants] = useState([]);
+  const [newExclude, setNewExclude] = useState("");
+  const [goalName, setGoalName] = useState("");
+  const [goalAmount, setGoalAmount] = useState(0);
+  const [recommendations, setRecommendations] = useState([]);
 
-  const handleApply = async () => {
-  const allData = [];
+  // Keywords for subscription detection
+  const subscriptionKeywords = ["netflix", "spotify", "tinder", "prime", "hulu", "disney", "deliveroo", "ubereats"];
 
-  for (let file of files) {
-    if (file.type === "text/csv") {
-      const text = await file.text();
-      const parsed = Papa.parse(text, { header: true });
-      allData.push(...parsed.data);
-    } else if (file.type === "application/pdf") {
-      // TODO: PDF parsing not implemented
-      alert("PDF support coming soon. Please upload CSV files for now.");
+  // Handle file selection
+  const handleFiles = (e) => {
+    setFiles(Array.from(e.target.files));
+  };
+
+  // On Apply, process selected files
+  const handleApply = () => processFiles(files);
+
+  // Process CSV/PDF files
+  const processFiles = async (fileList) => {
+    let transactions = [];
+    for (let file of fileList) {
+      if (file.type === 'text/csv') {
+        const text = await file.text();
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        transactions = transactions.concat(parsed.data);
+      } else if (file.type === 'application/pdf') {
+        // TODO: PDF parsing
+      }
     }
-  }
+    processTransactions(transactions);
+  };
 
-  if (allData.length === 0) {
-    alert("Please upload at least one CSV bank statement.");
-    return;
-  }
-
-  processTransactions(allData);
-};
-
+  // Categorize and summarize
   const processTransactions = (data) => {
     const cats = {};
-    const subs = {};
-    const iconMap = {
-      netflix: "🎬",
-      amazon: "🛒",
-      uber: "🚗",
-      spotify: "🎧",
-      gym: "🏋️",
-      mortgage: "🏠",
-      rent: "🏠",
-    };
+    const count = {};
 
-    data.forEach(({ Description = "", Amount = 0 }) => {
-      let category = "Other";
-      const desc = Description.toLowerCase();
-      const val = Math.abs(parseFloat(Amount));
-
-      if (desc.includes("tesco") || desc.includes("asda")) category = "Groceries";
-      else if (desc.includes("uber") || desc.includes("train")) category = "Transport";
-      else if (desc.includes("netflix") || desc.includes("spotify")) category = "Entertainment";
-      else if (desc.includes("rent") || desc.includes("mortgage")) category = "Housing";
-      else if (desc.includes("gym") || desc.includes("fitness")) category = "Health";
-
+    data.forEach(({ Description = '', Amount = 0 }) => {
+      const desc = Description.toLowerCase().trim();
+      if (excludedMerchants.some(ex => desc.includes(ex.toLowerCase()))) return;
+      const val = Math.abs(parseFloat(Amount) || 0);
+      count[desc] = (count[desc] || 0) + 1;
+      let category = 'Other';
+      if (/tesco|asda|aldi/.test(desc)) category = 'Groceries';
+      else if (/uber|train|taxi/.test(desc)) category = 'Transport';
+      else if (subscriptionKeywords.some(k => desc.includes(k))) category = 'Subscriptions';
+      else if (/rent|mortgage/.test(desc)) category = 'Housing';
       cats[category] = (cats[category] || 0) + val;
-
-      for (let key in iconMap) {
-        if (desc.includes(key)) {
-          subs[category] = subs[category] || [];
-          const prev = subs[category].find((i) => i.name === key);
-          if (prev) {
-            prev.amount += val;
-          } else {
-            subs[category].push({ name: key, amount: val, icon: iconMap[key] });
-          }
-        }
-      }
     });
 
-    for (let key in subs) {
-      const total = cats[key];
-      subs[key] = subs[key].map((item) => ({
-        ...item,
-        percent: ((item.amount / total) * 100).toFixed(1),
-      }));
-    }
-
     setCategorized(cats);
-    setSubcategories(subs);
+    const spend = Object.values(cats).reduce((a,b)=>a+b,0);
+    setTotalSpend(spend);
+    const rec = Object.entries(count)
+      .filter(([desc, times]) => times > 1 || subscriptionKeywords.some(k=>desc.includes(k)))
+      .map(([desc])=>desc);
+    setRecurring(rec);
 
-    const tips = [];
-    for (const [cat, items] of Object.entries(subs)) {
-      items.sort((a, b) => b.amount - a.amount);
-      const topThree = items.slice(0, 3);
-      topThree.forEach((item) => {
-        tips.push(`${item.icon} ${item.name.charAt(0).toUpperCase() + item.name.slice(1)} – £${item.amount.toFixed(2)} (${item.percent}%)`);
-      });
+    // AI insights
+    const top = Object.entries(cats).sort(([,a],[,b])=>b-a).slice(0,3)
+      .map(([k,v])=>`${k}: £${v.toFixed(2)}`);
+    setWeeklyAdvice(`🔍 Top Spend: ${top.join(', ')}.`);
+
+    const monthlyInc = incomeFrequency==='weekly'?income*4.33:incomeFrequency==='yearly'?income/12:income;
+    const rem = monthlyInc - spend;
+    setAlert(rem<0?`⚠️ Overspending by £${Math.abs(rem).toFixed(2)}`:'');
+
+    // Generate actionable recommendations
+    const recs = [];
+    // Subscriptions
+    const subSpend = cats['Subscriptions']||0;
+    if (subSpend>0) recs.push(
+      `• Subscriptions: You’re spending £${subSpend.toFixed(0)}/mo. Cancel or downgrade unused services (£20–£40 savings).`
+    );
+    // Delivery
+    const delCount = rec.filter(r=>/deliveroo|ubereats/.test(r)).length;
+    if (delCount>2) recs.push(
+      `• Food Delivery: ${delCount} orders detected. Cook at home to cut ~£70/month.`
+    );
+    // Transport
+    const transSpend = cats['Transport']||0;
+    if (transSpend>0) recs.push(
+      `• Transport: Spending £${transSpend.toFixed(0)}. Swap Ubers/trains for buses or cycling (£30–£50 savings).`
+    );
+    // Groceries
+    const grocSpend = cats['Groceries']||0;
+    if (grocSpend>0) recs.push(
+      `• Groceries: £${grocSpend.toFixed(0)}. Use meal planning & bulk buys to save 10–15%.`
+    );
+    // Total potential
+    recs.push(
+      `By trimming these categories, you could free up ~£130/month.`
+    );
+
+    // Investment advice
+    recs.push(
+      `
+Reallocate Savings:
+• High-Interest Savings: 4–5% APY (emergency fund)
+• Index Fund (S&P 500 ETF): 7–10% annual (mid/long-term)
+• Stocks/ISA: 8–12%+ (long-term wealth)
+      `.trim()
+    );
+
+    setRecommendations(recs);
+  };
+
+  const addExclude = () => {
+    if (newExclude.trim() && !excludedMerchants.includes(newExclude.trim())) {
+      setExcludedMerchants([...excludedMerchants,newExclude.trim()]);
+      setNewExclude("");
     }
-
-    const totalSpend = Object.values(cats).reduce((a, b) => a + b, 0);
-    setAiTip(`🔍 Top Spending Areas This Month:\n${tips.join("\n")}\n\nTotal Spend Analyzed: £${totalSpend.toFixed(2)}\n🧠 Tip: Review subscriptions you no longer use.`);
   };
-
-  const chartData = {
-    labels: Object.keys(categorized),
-    datasets: [
-      {
-        data: Object.values(categorized),
-        backgroundColor: ["#4CAF50", "#2196F3", "#FFC107", "#FF5722", "#9C27B0", "#607D8B"],
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const totalSpend = Object.values(categorized).reduce((a, b) => a + b, 0);
-  const remaining = income - totalSpend;
-  const progress = goalAmount > 0 ? ((income - remaining) / goalAmount) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-black">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <NavBar />
-      <main className="max-w-4xl mx-auto p-6">
-        <div className="bg-white p-4 rounded shadow mb-6">
+      <main className="flex-grow max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+
+        {/* Upload & Apply */}
+        <section className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">Upload Bank Statements</h2>
+          <input type="file" accept=".csv,application/pdf" multiple onChange={handleFiles} className="w-full border p-2 rounded mb-3" />
+          <button onClick={handleApply} className="bg-green-600 text-white px-4 py-2 rounded">Apply</button>
+          {recurring.length>0 && (
+            <div className="mt-3 text-sm"><h3 className="font-medium">Detected Recurring Payments:</h3>
+              <ul className="list-disc list-inside">{recurring.map((r,i)=><li key={i}>{r}</li>)}</ul>
+            </div>
+          )}
+        </section>
+
+        {/* Main Goal */}
+        <section className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">Main Saving Goal</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input type="text" value={goalName} onChange={e=>setGoalName(e.target.value)} placeholder="Goal Name" className="w-full border p-2 rounded" />
+            <input type="number" value={goalAmount} onChange={e=>setGoalAmount(Number(e.target.value))} placeholder="Goal Amount (£)" className="w-full border p-2 rounded" />
+          </div>
+        </section>
+
+        {/* Category Bubbles */}
+        <section className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">Category Goals</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {['Groceries','Transport','Subscriptions','Housing','Other'].map(cat=>{
+              const pct = (categorized[cat]||0)/ (goalAmount||1)*100;
+              return (
+                <div key={cat} className="text-center">
+                  <h4 className="font-semibold text-sm mb-1">{cat}</h4>
+                  <div className="relative mx-auto w-20 h-20">
+                    <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                      <circle cx="18" cy="18" r="15.9155" stroke="#eee" strokeWidth="4" fill="none" />
+                      <circle cx="18" cy="18" r="15.9155" stroke="#4CAF50" strokeWidth="4" strokeDasharray={`${pct.toFixed(1)},100`} fill="none" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold">{pct.toFixed(1)}%</div>
+                  </div>
+                  <p className="mt-1 text-xs">£{(categorized[cat]||0).toFixed(2)}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Recommendations */}
+        <section className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">Recommendations</h2>
+          <ul className="list-disc list-inside space-y-2 text-sm">
+            {recommendations.map((rec,i)=><li key={i} className="whitespace-pre-line">{rec}</li>)}
+          </ul>
+        </section>
+
+        {/* Overview */}
+        <section className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-2">Spending Overview</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold mb-1">Savings Mode:</label>
-              <select value={mode} onChange={(e) => setMode(e.target.value)} className="w-full border p-2 rounded">
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-              </select>
-              <label className="block mt-4 font-semibold mb-1">Auto-suggest subscription cancellations</label>
-              <input type="checkbox" checked={showSuggestions} onChange={(e) => setShowSuggestions(e.target.checked)} />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Income (£):</label>
-              <input
-                type="number"
-                value={income}
-                onChange={(e) => setIncome(Number(e.target.value))}
-                className="w-full border p-2 rounded"
-              />
-              <label className="block font-semibold mt-2">Income Frequency:</label>
-              <select
-                value={incomeFrequency}
-                onChange={(e) => setIncomeFrequency(e.target.value)}
-                className="w-full border p-2 rounded"
-              >
-                <option value="weekly">Per Week</option>
-                <option value="monthly">Per Month</option>
-                <option value="yearly">Per Year</option>
-              </select>
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Goal Amount (£):</label>
-              <input
-                type="number"
-                value={goalAmount}
-                onChange={(e) => setGoalAmount(Number(e.target.value))}
-                className="w-full border p-2 rounded"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Deadline:</label>
-              <input
-                type="date"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-                className="w-full border p-2 rounded"
-              />
-            </div>
+            <div className="text-center"><p className="text-sm">Total Spend</p><p className="text-xl font-bold">£{totalSpend.toFixed(2)}</p></div>
+            <div className="text-center"><p className="text-sm">Remaining Income</p><p className="text-xl font-bold">£{(
+              incomeFrequency==='weekly'?income*4.33:
+              incomeFrequency==='yearly'?income/12:
+              income-totalSpend
+            ).toFixed(2)}</p></div>
           </div>
           <div className="mt-4">
-            <label className="font-semibold block mb-1">Upload Bank Statement(s) (CSV or PDF)</label>
-            <input type="file" accept=".csv,.pdf" multiple onChange={(e) => setFiles([...e.target.files])} />
+            <Doughnut data={{labels:Object.keys(categorized),datasets:[{data:Object.values(categorized),backgroundColor:['#4CAF50','#2196F3','#FFC107','#FF5722','#9C27B0','#607D8B']}])}} />
+            {alert && <p className="mt-2 text-red-600">{alert}</p>}
+            {showSuggestions && <p className="mt-2 text-gray-700">{weeklyAdvice}</p>}
           </div>
-          <button
-            onClick={handleApply}
-            className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            Apply
-          </button>
-        </div>
-
-        <h2 className="text-2xl font-bold mb-4">📊 Dashboard Overview</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white p-4 rounded shadow">
-            <h4 className="text-sm font-semibold">Total Spend</h4>
-            <p className="text-lg font-bold text-red-600">£{totalSpend.toFixed(2)}</p>
-          </div>
-          <div className="bg-white p-4 rounded shadow">
-            <h4 className="text-sm font-semibold">Remaining Income</h4>
-            <p className="text-lg font-bold text-green-600">£{remaining.toFixed(2)}</p>
-          </div>
-          <div className="bg-white p-4 rounded shadow">
-            <h4 className="text-sm font-semibold">Goal Progress</h4>
-            <div className="w-full bg-gray-200 rounded-full h-4 mt-2">
-              <div className="bg-blue-600 h-4 rounded-full" style={{ width: `${progress.toFixed(1)}%` }}></div>
-            </div>
-            <p className="text-xs mt-1 text-gray-600">{progress.toFixed(1)}%</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-6 shadow-md mb-6">
-          <h2 className="text-2xl font-bold mb-4">📊 Spending Overview</h2>
-          <Doughnut data={chartData} />
-        </div>
-
-        {Object.keys(subcategories).length > 0 && (
-          <div className="bg-gray-100 p-4 rounded-lg shadow mb-4">
-            <h3 className="font-semibold mb-2">🔍 Subcategory Breakdown</h3>
-            {Object.entries(subcategories).map(([category, items]) => (
-              <div key={category} className="mb-3">
-                <h4 className="text-sm font-bold text-gray-700 mb-1">{category}</h4>
-                <div className="flex flex-wrap gap-2">
-                  {items.map((item, idx) => (
-                    <span key={idx} className="inline-block bg-white border text-sm px-2 py-1 rounded shadow">
-                      {item.icon} {item.name} – £{item.amount.toFixed(2)} ({item.percent}%)
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {aiTip && (
-          <div className="bg-yellow-50 p-4 rounded shadow whitespace-pre-line border-l-4 border-yellow-400">
-            <h4 className="font-bold text-yellow-700 mb-2">💡 AI Insight</h4>
-            <p className="text-sm text-gray-800">{aiTip}</p>
-          </div>
-        )}
+        </section>
       </main>
     </div>
   );
