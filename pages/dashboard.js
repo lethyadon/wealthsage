@@ -54,28 +54,27 @@ export default function Dashboard() {
   }, [deadline]);
 
   const handleFiles = (e) => setFiles(Array.from(e.target.files));
-  const handleApply = () => processFiles(files);
-
-  const processFiles = async (fileList) => {
-    let transactions = [];
-    for (let file of fileList) {
-      if (file.type === 'text/csv' || file.name.toLowerCase().endsWith('.csv')) {
-        const text = await file.text();
-        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-        transactions = transactions.concat(parsed.data);
-      } else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-        const data = await file.arrayBuffer();
-        const pdf = await getDocument({ data }).promise;
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          content.items.map(item => item.str).forEach(line => {
-            const m = line.match(/\d+\.\d{2}/);
-            if (m) transactions.push({ Description: line, Amount: parseFloat(m[0]) });
-          });
-        }
-      }
+} else if (file.name.toLowerCase().endsWith('.pdf')) {
+  // PDF parsing: extract lines with description and amount
+  const data = await file.arrayBuffer();
+  const pdf = await getDocument({ data }).promise;
+  let allText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    allText += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  // Split into lines and match description + amount
+  allText.split(/\r?\n/).forEach(line => {
+    const match = line.match(/(.+?)\s+£?(\d{1,3}(?:[.,]\d{2}))/);
+    if (match) {
+      const desc = match[1].trim();
+      const amt = parseFloat(match[2].replace(',', '.'));
+      transactions.push({ Description: desc, Amount: amt });
     }
+  });
+}
+
     processTransactions(transactions);
   };
 
