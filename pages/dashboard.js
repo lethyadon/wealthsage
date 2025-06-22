@@ -1,6 +1,6 @@
 // pages/dashboard.js
 import NavBar from "../components/NavBar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Papa from "papaparse";
 import { Doughnut } from "react-chartjs-2";
 import { pdfjs } from "react-pdf";
@@ -10,6 +10,14 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import Image from "next/image";
+
+let saveAs;
+if (typeof window !== "undefined") {
+  import("file-saver").then((module) => {
+    saveAs = module.saveAs;
+  });
+}
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -120,8 +128,8 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 text-black">
       <NavBar />
       <main className="max-w-4xl mx-auto p-6">
-        <div className="bg-white shadow p-4 rounded mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white p-4 rounded shadow mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block font-semibold mb-1">Savings Mode:</label>
               <select value={mode} onChange={(e) => setMode(e.target.value)} className="w-full border p-2 rounded">
