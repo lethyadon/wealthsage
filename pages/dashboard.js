@@ -35,16 +35,26 @@ export default function Dashboard() {
   const [showSuggestions, setShowSuggestions] = useState(true);
 
   const handleApply = async () => {
-    const allData = [];
-    for (let file of files) {
-      if (file.type === "text/csv") {
-        const text = await file.text();
-        const parsed = Papa.parse(text, { header: true });
-        allData.push(...parsed.data);
-      }
+  const allData = [];
+
+  for (let file of files) {
+    if (file.type === "text/csv") {
+      const text = await file.text();
+      const parsed = Papa.parse(text, { header: true });
+      allData.push(...parsed.data);
+    } else if (file.type === "application/pdf") {
+      // TODO: PDF parsing not implemented
+      alert("PDF support coming soon. Please upload CSV files for now.");
     }
-    processTransactions(allData);
-  };
+  }
+
+  if (allData.length === 0) {
+    alert("Please upload at least one CSV bank statement.");
+    return;
+  }
+
+  processTransactions(allData);
+};
 
   const processTransactions = (data) => {
     const cats = {};
