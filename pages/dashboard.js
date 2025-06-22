@@ -103,12 +103,10 @@ export default function Dashboard() {
 
   function analyze(data) {
     const cats = {};
-    const count = {};
     data.forEach(({ Description = '', Amount = 0 }) => {
       const desc = Description.toLowerCase();
       if (excluded.some(ex => desc.includes(ex))) return;
       const val = Math.abs(parseFloat(Amount) || 0);
-      count[desc] = (count[desc] || 0) + 1;
       let category = 'Other';
       if (/tesco|asda|aldi/.test(desc)) category = 'Groceries';
       else if (/uber|train|taxi/.test(desc)) category = 'Transport';
@@ -119,11 +117,8 @@ export default function Dashboard() {
     setCategorized(cats);
     const spend = Object.values(cats).reduce((a, b) => a + b, 0);
     setHistory(prev => [...prev, { date: new Date().toISOString(), spend }]);
-    const top3 = Object.entries(cats)
-      .sort(([,a],[,b]) => b - a)
-      .slice(0,3)
-      .map(([k,v]) => `${k}: £${v.toFixed(2)}`);
-    setWeeklyAdvice(`Top: ${top3.join(', ')}`);
+    const top3 = Object.entries(cats).sort(([,a],[,b]) => b - a).slice(0,3).map(([k,v]) => `${k}: £${v.toFixed(2)}`);
+    setWeeklyAdvice(`Top spend: ${top3.join(', ')}`);
     const monthlyInc = incomeFrequency==='weekly'?income*4.33:incomeFrequency==='yearly'?income/12:income;
     const diff = monthlyInc - spend;
     setAlert(diff<0?`Overspent £${Math.abs(diff).toFixed(2)}`:'');
@@ -145,7 +140,7 @@ export default function Dashboard() {
     doc.save('report.pdf');
   };
 
-  const pct = (cat) => goalAmount ? ((categorized[cat] || 0) / goalAmount * 100).toFixed(1) : '0';
+  const pct = (cat) => goalAmount ? ((categorized[cat]||0)/goalAmount*100).toFixed(1) : '0';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -153,47 +148,119 @@ export default function Dashboard() {
       <main className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Settings */}
         <section className="grid grid-cols-2 gap-4 bg-white p-4 rounded shadow">
-          <input type="number" value={income} onChange={e => setIncome(+e.target.value)} placeholder="Income (£)" className="border p-2 rounded" />
-          <select value={incomeFrequency} onChange={e => setIncomeFrequency(e.target.value)} className="border p-2 rounded">
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-          </select>
-          <input type="text" value={goalName} onChange={e => setGoalName(e.target.value)} placeholder="Goal Name" className="border p-2 rounded" />
-          <input type="number" value={goalAmount} onChange={e => setGoalAmount(+e.target.value)} placeholder="Goal Amount (£)" className="border p-2 rounded" />
-          <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="border p-2 rounded" />
-          <label className="flex items-center space-x-2"><input type="checkbox" checked={showSuggestions} onChange={e => setShowSuggestions(e.target.checked)} /><span>Auto-suggest</span></label>
+          <div>
+            <label className="block text-sm font-medium">Income (£) <span className="text-red-500">*</span> (£)</label>
+            <input type="number" value={income} onChange={e => setIncome(+e.target.value)} className="w-full border p-2 rounded" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Frequency <span className="text-red-500">*</span></label>
+            <select value={incomeFrequency} onChange={e => setIncomeFrequency(e.target.value)} className="w-full border p-2 rounded">
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Goal Name <span className="text-red-500">*</span></label>
+            <input type="text" value={goalName} onChange={e => setGoalName(e.target.value)} className="w-full border p-2 rounded" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Goal Amount (£) <span className="text-red-500">*</span> (£)</label>
+            <input type="number" value={goalAmount} onChange={e => setGoalAmount(+e.target.value)} className="w-full border p-2 rounded" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Deadline <span className="text-red-500">*</span></label>
+            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full border p-2 rounded" />
+          </div>
+          <div className="flex items-center">
+            <label className="inline-flex items-center space-x-2">
+              <input type="checkbox" checked={showSuggestions} onChange={e => setShowSuggestions(e.target.checked)} />
+              <span className="text-sm">Auto-suggest</span>
+            </label>
+          </div>
         </section>
+
         {/* Upload & Entry */}
         <section className="bg-white p-4 rounded shadow space-y-4">
-          <input type="file" multiple accept=".csv,.pdf" onChange={handleFiles} className="w-full border p-2 rounded" />
+          <div>
+            <label className="block text-sm font-medium mb-1">Upload Bank Statements <span className="text-red-500">*</span></label>
+            <input type="file" multiple accept=".csv,.pdf" onChange={handleFiles} className="w-full border p-2 rounded" />
+          </div>
           <button onClick={handleApply} className="bg-green-600 text-white px-4 py-2 rounded">Apply</button>
-          <form onSubmit={addEntry} className="flex gap-2 flex-wrap">
-            <input placeholder="Category" value={newEntry.category} onChange={e => setNewEntry({ ...newEntry, category: e.target.value })} className="border p-2 rounded" />
-            <input placeholder="Subcategory" value={newEntry.subcategory} onChange={e => setNewEntry({ ...newEntry, subcategory: e.target.value })} className="border p-2 rounded" />
-            <input type="number" placeholder="Amount (£)" value={newEntry.amount} onChange={e => setNewEntry({ ...newEntry, amount: e.target.value })} className="border p-2 w-24 rounded" />
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Add Entry</button>
+          <form onSubmit={addEntry} className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-sm font-medium">Category <span className="text-red-500">*</span></label>
+              <input placeholder="Category" value={newEntry.category} onChange={e => setNewEntry({ ...newEntry, category: e.target.value })} className="w-full border p-2 rounded" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Subcategory <span className="text-red-500">*</span></label>
+              <input placeholder="Subcategory" value={newEntry.subcategory} onChange={e => setNewEntry({ ...newEntry, subcategory: e.target.value })} className="w-full border p-2 rounded" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Amount (£) <span className="text-red-500">*</span> (£)</label>
+              <input type="number" placeholder="Amount" value={newEntry.amount} onChange={e => setNewEntry({ ...newEntry, amount: e.target.value })} className="w-full border p-2 rounded" />
+            </div>
+            <div className="col-span-3 text-right">
+              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Add Entry</button>
+            </div>
           </form>
-          <div className="flex gap-2">
-            <input placeholder="Exclude Merchant" value={newExclude} onChange={e => setNewExclude(e.target.value)} className="border p-2 rounded flex-grow" />
-            <button onClick={addExclude} className="bg-gray-700 text-white px-4 py-2 rounded">Exclude</button>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-sm font-medium">Exclude Merchant</label>
+              <input placeholder="Keyword" value={newExclude} onChange={e => setNewExclude(e.target.value)} className="w-full border p-2 rounded" />
+            </div>
+            <div className="flex items-end">
+              <button onClick={addExclude} className="w-full bg-gray-700 text-white px-4 py-2 rounded">Exclude</button>
+            </div>
           </div>
           <button onClick={exportPDF} className="bg-indigo-600 text-white px-4 py-2 rounded">Export PDF</button>
           {daysLeft !== null && <p className="text-sm">⏳ {daysLeft} days left</p>}
         </section>
-        {/* Overview */}
+
+        {/* Category Goals vs Main Goal */}
+        <section className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Category Goals vs Main Goal</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {['Groceries','Transport','Subscriptions','Housing','Other'].map((cat) => (
+              <div key={cat} className="text-center">
+                <h4 className="text-sm font-medium mb-1">{cat}</h4>
+                <div className="relative mx-auto w-20 h-20">
+                  <svg viewBox="0 0 36 36" className="transform -rotate-90 w-full h-full">
+                    <circle cx="18" cy="18" r="15.9155" stroke="#eee" strokeWidth="4" fill="none" />
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="15.9155"
+                      stroke="#4CAF50"
+                      strokeWidth="4"
+                      strokeDasharray={`${pct(cat)},100`}
+                      fill="none"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold">
+                    {pct(cat)}%
+                  </div>
+                </div>
+                <p className="text-xs mt-1">£{(categorized[cat]||0).toFixed(2)}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Overview & Trend */}
         <section className="grid md:grid-cols-2 gap-6">
           <div className="bg-white p-4 rounded shadow">
             <h3 className="font-semibold mb-2">Spending Overview</h3>
             <Doughnut data={{ labels: Object.keys(categorized), datasets: [{ data: Object.values(categorized), backgroundColor: ['#4CAF50','#2196F3','#FFC107','#FF5722','#9C27B0','#607D8B'] }] }} />
             {alert && <p className="mt-2 text-red-600">{alert}</p>}
-            {showSuggestions && <p className="mt-2">{weeklyAdvice}</p>}
+            {showSuggestions && <p className="mt-2 text-sm">{weeklyAdvice}</p>}
           </div>
           <div className="bg-white p-4 rounded shadow">
             <h3 className="font-semibold mb-2">Trend</h3>
             <Line data={{ labels: history.map(h => new Date(h.date).toLocaleDateString()), datasets: [{ label: 'Spend', data: history.map(h => h.spend) }] }} />
           </div>
         </section>
+
       </main>
     </div>
   );
