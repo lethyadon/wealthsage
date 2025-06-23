@@ -134,7 +134,9 @@ export default function Dashboard() {
     console.log("Categorized:", cats);
     const spend = Object.values(cats).reduce((a, b) => a + b, 0);
     setHistory(prev => [...prev, { date: new Date().toISOString(), spend }]);
-    const top3 = Object.entries(cats).sort(([, a], [, b]) => b - a).slice(0, 3)
+    const top3 = Object.entries(cats)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
       .map(([k, v]) => `${k}: £${v.toFixed(2)}`);
     setWeeklyAdvice(`Top spend: ${top3.join(', ')}`);
     const mi = incomeFrequency === 'weekly' ? income * 4.33 :
@@ -216,7 +218,4 @@ export default function Dashboard() {
             </div>
             <div>
               <label className="block font-medium">Subcategory</label>
-              <input placeholder="Subcategory" value={newEntry.subcategory} onChange={e => setNewEntry({...newEntry,subcategory: e.target.value})} className="w-full border p-2 rounded" />
-            </div>
-            <div>
-              <label className="
+              <input placeholder="Subcategory" value={newEntry.subcategory} on
